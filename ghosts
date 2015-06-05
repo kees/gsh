@@ -1,0 +1,111 @@
+#!/usr/bin/perl
+# $Header: /kees/projects/gsh/RCS/ghosts,v 1.13 2006/05/13 22:55:39 nemesis Exp $
+
+=head1 NAME
+
+B<ghosts> - provides a wrapper for the routines in SystemManagement::Ghosts
+
+=head1 SYNOPSIS
+
+ghosts [OPTIONS] SYSTEMS
+
+ SYSTEMS is a combination of ghost macros.  See --help for more details.
+
+ -h, --help            Display full help
+
+=head1 DESCRIPTION
+
+Parses the /etc/ghosts file for matching hosts.  The first word of each
+line is the "hostname", and each other word on the line represents that
+host's membership in a given group.  In the example below, there are two
+machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
+"e450" group, etc:
+
+        # Macros
+        sunprod=solaris^e450
+        # Machines
+        #
+        # Name          Group           Hardware        OS
+        bilbo           prod            intel           linux
+        baggins         prod            e4500           solaris
+        tolkien         devel           e450            solaris
+
+Machine groups can be combined logically with the "+" and "^" characters
+to produce composite groups.  For example:
+
+        $ ghosts intel+e450
+        bilbo tolkien
+        $ ghosts prod^intel
+        baggins
+
+The gsh(1) command can be used to run remote SSH connections to hosts.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-h>, B<--help>
+
+Displays this full help.
+
+=back
+
+=cut
+
+use SystemManagement::Ghosts;
+use Getopt::Long qw(:config no_ignore_case bundling require_order);
+use Pod::Usage;
+
+our $opt_help = 0;
+
+GetOptions("help|h") or pod2usage(-verbose => 0, -exitstatus => 1);
+
+pod2usage(-verbose => 2, -exitstatus => 0) if ($opt_help);
+
+pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
+
+SystemManagement::Ghosts::Load();
+my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
+
+# prints which machines match the argument list
+print join(" ",@BACKBONES),"\n";
+
+=head1 PREREQUISITES
+
+C<POSIX>
+C<SystemManagement::Ghosts>
+
+=head1 BUGS
+
+I bet.
+
+=head1 FILES
+
+/etc/ghosts
+
+=head1 SEE ALSO
+
+perl(1), gsh(1), SystemManagement::Ghosts(1)
+
+=head1 AUTHOR
+
+Kees Cook E<lt>kees@outflux.netE<gt>
+
+L<http://www.outflux.net/|http://www.outflux.net/>
+
+=head1 COPYRIGHT
+
+Copyright (C) 1998-2014 Kees Cook <kees@outflux.net>
+
+Supposedly based on original code distributed with Perl Distribution.
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+=head1 REVISION
+
+Revision: $Revision $
+
+=cut

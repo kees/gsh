@@ -1,0 +1,45 @@
+Well, this is seriously undocumented code.  The short version is:
+
+	perl Makefile.PL
+	make
+	make install
+
+And then create a file called /etc/ghosts which lists all the machines you
+want to contact.  It would look something like this:
+
+	# Macros
+	sunprod=solaris^e450
+	# Machines
+	#
+	# Name		Group		Hardware	OS
+	bilbo		prod		intel		linux
+	baggins		prod		e4500		solaris
+	tolkien		devel		e450		solaris
+	
+Machine groups are run together with "+"s and "^"s as you see fit:
+
+	ghosts intel+e450
+
+	ghosts prod^intel
+
+The "ghosts" command just shows the resulting list.  "gsh" a group to run
+a command:
+
+	gsh devel+intel "cat /etc/motd"
+
+You'll need to have ssh set up with trusted RSA keys, though.  I should
+cover that in here too, but it's REALLY late tonight, and I just want to
+get this posted so my buddy will quite bugging me about downloading the 
+"latest" version.  :P
+
+See the TODO file for the huge list of things I need to do.  Mostly
+documentation.  :)
+
+Credit where credit is due: this is very very losely based on the "gsh" tool
+that came (comes?) with the Perl distribution, and on extra work by 
+Mike Murphy.  My version will do things in parallel, and does proper macro
+expansions.  It is released under the GNU General Public License.
+
+
+Kees Cook
+cook@cpoint.net

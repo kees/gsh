@@ -1,0 +1,8 @@
+
+
+- Document how gsh macro/groups work (/etc/ghosts file)
+- Document how gsh works
+- Document how gsh -r works
+- Document ghosts (not much to it)
+- Document the various silly functions found in sysadmin.pl
+

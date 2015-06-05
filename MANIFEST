@@ -1,0 +1,10 @@
+MANIFEST
+README
+TODO
+LICENSE
+lib/SystemManagement/Ghosts.pm
+gsh
+ghosts
+Makefile.PL
+ChangeLog
+META.yml                                 Module meta-data (added by MakeMaker)
