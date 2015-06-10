@@ -13,6 +13,11 @@ ghosts [OPTIONS] SYSTEMS
 
  -h, --help            Display full help
 
+=item B<-g>, B<--ghosts> CONFIG_FILE
+
+Uses the provided ghosts configuration file, instead of /etc/ghosts. This
+means /etc/ghosts will not be read at all.
+
 =head1 DESCRIPTION
 
 Parses the /etc/ghosts file for matching hosts.  The first word of each
@@ -48,6 +53,11 @@ The gsh(1) command can be used to run remote SSH connections to hosts.
 
 Displays this full help.
 
+=item B<-g>, B<--ghosts> CONFIG_FILE
+
+Uses the provided ghosts configuration file, instead of /etc/ghosts. This
+means /etc/ghosts will not be read at all.
+
 =back
 
 =cut
@@ -57,14 +67,17 @@ use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
 
 our $opt_help = 0;
+our $opt_ghosts = "";
 
-GetOptions("help|h") or pod2usage(-verbose => 0, -exitstatus => 1);
+GetOptions("help|h",
+           "ghosts|g=s") or pod2usage(-verbose => 0, -exitstatus => 1);
 
 pod2usage(-verbose => 2, -exitstatus => 0) if ($opt_help);
 
 pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
 
-SystemManagement::Ghosts::Load();
+print $opt_ghosts, "\n";
+SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
 
 # prints which machines match the argument list
