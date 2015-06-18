@@ -13,6 +13,7 @@ gsh [OPTIONS] SYSTEMS CMD...
 
  -h, --help            Display full help
  -d, --debug           Turn on exeuction debugging reports
+ -g, --ghosts          specific ghosts configuration file
  -h, --no-host-prefix  Does not prefix output lines with the host name
  -s, --show-commands   Displays the command before the output report
  -n, --open-stdin      Leaves stdin open when running (scary!)
@@ -73,6 +74,11 @@ Displays this help.
 Turns on debugging.  A regular report of pending hosts is create, and PIDs
 are show as commands are executed and reaped.
 
+=item B<-g>, B<--ghosts> CONFIG_FILE
+
+Uses the provided ghosts configuration file, instead of /etc/ghosts. This
+means /etc/ghosts will not be read, at all.
+
 =item B<-h>, B<--no-host-prefix>
 
 Turns off the prefixing of hostnames to the output reports.
@@ -115,6 +121,7 @@ Displays the version information and exits.
 
 our $opt_help = 0;
 our $opt_debug = 0;
+our $opt_ghosts = "";
 our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
 our $opt_open_stdin = 0;
@@ -125,6 +132,7 @@ our $opt_version = 0;
 
 GetOptions("help|h",
            "debug|d",
+           "ghosts|g=s",
            "no-host-prefix|p",
            "show-command|s",
            "open-stdin|n",
@@ -145,7 +153,7 @@ $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
 
 pod2usage(-verbose => 0, -exitstatus => -1) if ($cmd eq "");
 
-SystemManagement::Ghosts::Load();
+SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES=SystemManagement::Ghosts::Expanded($systype);
 
 my $TMP = tempdir( CLEANUP => 1 );
