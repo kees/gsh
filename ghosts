@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Header: /kees/projects/gsh/RCS/ghosts,v 1.13 2006/05/13 22:55:39 nemesis Exp $
 
 =head1 NAME
 
@@ -67,8 +66,13 @@ pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
 SystemManagement::Ghosts::Load();
 my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
 
-# prints which machines match the argument list
-print join(" ",@BACKBONES),"\n";
+if (scalar @BACKBONES == 0) {
+  print "Error: no hosts found\n";
+  exit 3;
+} else {
+  # prints which machines match the argument list
+  print join(" ",@BACKBONES),"\n";
+}
 
 =head1 PREREQUISITES
 

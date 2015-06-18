@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Header: /kees/projects/gsh/RCS/gsh,v 1.33 2006/05/13 22:55:50 nemesis Exp $
 
 =head1 NAME
 
