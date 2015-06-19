@@ -14,7 +14,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -h, --help            Display full help
  -d, --debug           Turn on exeuction debugging reports
  -g, --ghosts          specific ghosts configuration file
- -h, --no-host-prefix  Does not prefix output lines with the host name
+ -p, --no-host-prefix  Does not prefix output lines with the host name
  -s, --show-commands   Displays the command before the output report
  -n, --open-stdin      Leaves stdin open when running (scary!)
  -l, --user USER       SSH's to the host as user USER
@@ -79,7 +79,7 @@ are show as commands are executed and reaped.
 Uses the provided ghosts configuration file, instead of /etc/ghosts. This
 means /etc/ghosts will not be read, at all.
 
-=item B<-h>, B<--no-host-prefix>
+=item B<-p>, B<--no-host-prefix>
 
 Turns off the prefixing of hostnames to the output reports.
 
