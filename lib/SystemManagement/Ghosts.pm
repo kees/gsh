@@ -70,7 +70,7 @@ sub ParseGhosts {
 #				warn "'$one_of_these' matched '$name' as '$repl'\n";
         			$one_of_these =~ s/:$name:/:$repl:/;
 			}
-				
+
 			# do expansion in "unwanted" list
         		if ($one_of_these =~ /:-$name:/) {
 				my @query = ParseGhosts($depth+1,$repl);
@@ -82,11 +82,11 @@ sub ParseGhosts {
 		}
 		else {
 			# we have a normal line
-	
+
             my @attr = split(' ',lc($line));# a list of attributes to match against
             #   which we put into an array normalized to lower case
             my $host = $attr[0];       # the first attribute is the host name
-	
+
 			my $wanted = 0;
     			foreach my $attr (@attr) { # iterate over attribute array
        		 		if (index(lc($one_of_these),":$attr:") >= 0) {
