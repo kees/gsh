@@ -3,6 +3,7 @@ use warnings;
 use strict;
 
 my $GHOSTS_PATH="/etc/ghosts";
+my @GHOSTS_USER = ('$HOME/.ghosts', '$HOME/.config/ghosts', '$HOME/etc/ghosts');
 my @GHOSTS;    # all the lines of the ghosts file
 
 # loads the ghosts file into @sysadmin_ghosts
@@ -108,6 +109,18 @@ sub ParseGhosts {
 sub Expanded {
 	my(@type) = @_;
 	return ParseGhosts(0,@type);
+}
+
+# Find the user's GHOSTS file:
+# one of $HOME/.ghosts, $HOME/.config/ghosts, $HOME/etc/ghosts
+# whichever is found first.  If no file is found, then FALSE is returned.
+sub UserConfig {
+   my @GHOSTS_USER = ('/.ghosts', '/.config/ghosts', '/etc/ghosts');
+   my $HOME = $ENV{HOME};
+   foreach my $config (map { $HOME . $_ } @GHOSTS_USER) {
+      return $config if -e $config;
+   }
+   return '';
 }
 
 1;
