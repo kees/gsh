@@ -76,10 +76,10 @@ my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
 if (scalar @BACKBONES == 0) {
   print "Error: no hosts found\n";
   exit 3;
-} else {
-  # prints which machines match the argument list
-  print join(" ",@BACKBONES),"\n";
 }
+
+# prints which machines match the argument list
+print join(" ",@BACKBONES),"\n";
 
 =head1 PREREQUISITES
 
