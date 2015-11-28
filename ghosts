@@ -14,7 +14,8 @@ ghosts [OPTIONS] SYSTEMS
 
 =head1 DESCRIPTION
 
-Parses the /etc/ghosts file for matching hosts.  The first word of each
+Parses the /etc/ghosts and the $HOME/.ghosts files for matching hosts.
+The first word of each
 line is the "hostname", and each other word on the line represents that
 host's membership in a given group.  In the example below, there are two
 machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
@@ -93,7 +94,13 @@ I bet.
 
 =head1 FILES
 
-/etc/ghosts
+ - /etc/ghosts
+   System configuration.
+
+ - $HOME/.ghosts
+ - $HOME/.config/ghosts
+ - $HOME/etc/ghosts
+   User-defined configuration (only the first one found will be used).
 
 =head1 SEE ALSO
 
