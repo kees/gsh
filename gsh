@@ -154,6 +154,7 @@ $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
 pod2usage(-verbose => 0, -exitstatus => -1) if ($cmd eq "");
 
 Load($opt_ghosts);
+Load(UserConfig());
 my @BACKBONES=Expanded($systype);
 
 my $TMP = tempdir( CLEANUP => 1 );
