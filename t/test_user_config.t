@@ -19,15 +19,15 @@ sub touch {
 $ENV{HOME} = tempdir( CLEANUP => 1 );
 my $HOME = $ENV{HOME};
 
-is	'', SystemManagement::Ghosts::UserConfig(), 'no user-config found';
+is	'', UserConfig(), 'no user-config found';
 
 touch "$HOME/etc/ghosts";
-is	"$HOME/etc/ghosts", SystemManagement::Ghosts::UserConfig(), 'must find $HOME/etc/ghosts file';
+is	"$HOME/etc/ghosts", UserConfig(), 'must find $HOME/etc/ghosts file';
 
 touch "$HOME/.config/ghosts";
-is	"$HOME/.config/ghosts", SystemManagement::Ghosts::UserConfig(), 'must find $HOME/.config/ghosts file';
+is	"$HOME/.config/ghosts", UserConfig(), 'must find $HOME/.config/ghosts file';
 
 touch "$HOME/.ghosts";
-is	"$HOME/.ghosts", SystemManagement::Ghosts::UserConfig(), 'must find $HOME/.ghosts file';
+is	"$HOME/.ghosts", UserConfig(), 'must find $HOME/.ghosts file';
 
 done_testing();
