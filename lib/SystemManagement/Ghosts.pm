@@ -12,7 +12,7 @@ sub Load {
 	my($line);
 	$file=$GHOSTS_PATH if (!$file || $file eq "");
 	open(GHOSTS_FILE,"<${file}") ||
-		warn("$0: Cannot open \"${file}\": $!\n");
+		return;		# don't worry if file is unreadable
 	while (<GHOSTS_FILE>) {
 		# kill blank lines
 		s/[ \t]*\n//;
