@@ -2,6 +2,10 @@ package SystemManagement::Ghosts;
 use warnings;
 use strict;
 
+use Exporter 'import';
+
+our @EXPORT_OK = qw( Load Expanded UserConfig );
+
 my $GHOSTS_PATH="/etc/ghosts";
 my @GHOSTS_USER = ('$HOME/.ghosts', '$HOME/.config/ghosts', '$HOME/etc/ghosts');
 my @GHOSTS;    # all the lines of the ghosts file
