@@ -53,7 +53,7 @@ use strict;
 use warnings;
 
 our $NAME="gsh";
-our $VERSION="1.1.0-ee";
+our $VERSION="1.1.0";
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
