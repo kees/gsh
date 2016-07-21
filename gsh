@@ -53,13 +53,17 @@ use strict;
 use warnings;
 
 our $NAME="gsh";
-our $VERSION="1.1.0";
+our $VERSION="1.1.0-ee";
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
 
 use SystemManagement::Ghosts qw( Load Expanded UserConfig );
 use POSIX "sys_wait_h";
 use File::Temp qw/ tempdir /;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
+use List::Util qw(reduce);
 
 =head1 OPTIONS
 
@@ -191,6 +195,9 @@ my $ssh_args="";
 $ssh_args.=$opt_open_stdin ? "" : " -n";
 $ssh_args.=$opt_user ? " -l $opt_user" : "";
 
+# determine max length of all hostnames
+my $maxhostlen = length(reduce{ length($a) > length($b) ? $a : $b } @BACKBONES);
+
 # for each machine that matched the ghosts systype do the following:
 my $oldcmd = $cmd;
 foreach my $host (@BACKBONES) {
@@ -199,7 +206,7 @@ foreach my $host (@BACKBONES) {
 	$output{$host}="";
 
 	# make a column header for this machine if needed
-	$showlist{$host} = $opt_no_host_prefix ? "" : "$host:\t";
+	$showlist{$host} = $opt_no_host_prefix ? "" : "$host:  " . (" "x($maxhostlen - length($host)));
 
 #	push(@tried,$host);
 	# do the fork
