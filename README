@@ -22,6 +22,14 @@ Machine groups are run together with "+"s and "^"s as you see fit:
 
 	ghosts prod^intel
 
+The user can also define its own sets of machines in one of the following
+files (whichever is found first is the one in used):
+	$HOME/.ghosts
+	$HOME/.config/ghosts
+	$HOME/etc/ghosts
+The global and user-defined configurations are merged together by the
+"ghosts" command.
+
 The "ghosts" command just shows the resulting list.  "gsh" a group to run
 a command:
 

@@ -3,6 +3,7 @@ README
 TODO
 LICENSE
 lib/SystemManagement/Ghosts.pm
+t/test_user_config.t
 gsh
 ghosts
 Makefile.PL

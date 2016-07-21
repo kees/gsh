@@ -2,7 +2,12 @@ package SystemManagement::Ghosts;
 use warnings;
 use strict;
 
+use Exporter 'import';
+
+our @EXPORT_OK = qw( Load Expanded UserConfig );
+
 my $GHOSTS_PATH="/etc/ghosts";
+my @GHOSTS_USER = ('$HOME/.ghosts', '$HOME/.config/ghosts', '$HOME/etc/ghosts');
 my @GHOSTS;    # all the lines of the ghosts file
 
 # loads the ghosts file into @sysadmin_ghosts
@@ -11,7 +16,7 @@ sub Load {
 	my($line);
 	$file=$GHOSTS_PATH if (!$file || $file eq "");
 	open(GHOSTS_FILE,"<${file}") ||
-		warn("$0: Cannot open \"${file}\": $!\n");
+		return;		# don't worry if file is unreadable
 	while (<GHOSTS_FILE>) {
 		# kill blank lines
 		s/[ \t]*\n//;
@@ -70,7 +75,7 @@ sub ParseGhosts {
 #				warn "'$one_of_these' matched '$name' as '$repl'\n";
         			$one_of_these =~ s/:$name:/:$repl:/;
 			}
-				
+
 			# do expansion in "unwanted" list
         		if ($one_of_these =~ /:-$name:/) {
 				my @query = ParseGhosts($depth+1,$repl);
@@ -82,11 +87,11 @@ sub ParseGhosts {
 		}
 		else {
 			# we have a normal line
-	
+
             my @attr = split(' ',lc($line));# a list of attributes to match against
             #   which we put into an array normalized to lower case
             my $host = $attr[0];       # the first attribute is the host name
-	
+
 			my $wanted = 0;
     			foreach my $attr (@attr) { # iterate over attribute array
        		 		if (index(lc($one_of_these),":$attr:") >= 0) {
@@ -108,6 +113,18 @@ sub ParseGhosts {
 sub Expanded {
 	my(@type) = @_;
 	return ParseGhosts(0,@type);
+}
+
+# Find the user's GHOSTS file:
+# one of $HOME/.ghosts, $HOME/.config/ghosts, $HOME/etc/ghosts
+# whichever is found first.  If no file is found, then FALSE is returned.
+sub UserConfig {
+   my @GHOSTS_USER = ('/.ghosts', '/.config/ghosts', '/etc/ghosts');
+   my $HOME = $ENV{HOME};
+   foreach my $config (map { $HOME . $_ } @GHOSTS_USER) {
+      return $config if -e $config;
+   }
+   return '';
 }
 
 1;

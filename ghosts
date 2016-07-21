@@ -14,7 +14,8 @@ ghosts [OPTIONS] SYSTEMS
 
 =head1 DESCRIPTION
 
-Parses the /etc/ghosts file for matching hosts.  The first word of each
+Parses the /etc/ghosts and the $HOME/.ghosts files for matching hosts.
+The first word of each
 line is the "hostname", and each other word on the line represents that
 host's membership in a given group.  In the example below, there are two
 machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
@@ -56,7 +57,7 @@ means /etc/ghosts will not be read at all.
 
 =cut
 
-use SystemManagement::Ghosts;
+use SystemManagement::Ghosts qw( Load Expanded UserConfig );
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
 
@@ -70,16 +71,17 @@ pod2usage(-verbose => 2, -exitstatus => 0) if ($opt_help);
 
 pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
 
-SystemManagement::Ghosts::Load($opt_ghosts);
-my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
+Load($opt_ghosts);
+Load(UserConfig());
+my @BACKBONES=Expanded(@ARGV);
 
 if (scalar @BACKBONES == 0) {
   print "Error: no hosts found\n";
   exit 3;
-} else {
-  # prints which machines match the argument list
-  print join(" ",@BACKBONES),"\n";
 }
+
+# prints which machines match the argument list
+print join(" ",@BACKBONES),"\n";
 
 =head1 PREREQUISITES
 
@@ -92,7 +94,13 @@ I bet.
 
 =head1 FILES
 
-/etc/ghosts
+ - /etc/ghosts
+   System configuration.
+
+ - $HOME/.ghosts
+ - $HOME/.config/ghosts
+ - $HOME/etc/ghosts
+   User-defined configuration (only the first one found will be used).
 
 =head1 SEE ALSO
 

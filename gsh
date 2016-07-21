@@ -55,7 +55,7 @@ use warnings;
 our $NAME="gsh";
 our $VERSION="1.1.0";
 
-use SystemManagement::Ghosts;
+use SystemManagement::Ghosts qw( Load Expanded UserConfig );
 use POSIX "sys_wait_h";
 use File::Temp qw/ tempdir /;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
@@ -153,8 +153,9 @@ $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
 
 pod2usage(-verbose => 0, -exitstatus => -1) if ($cmd eq "");
 
-SystemManagement::Ghosts::Load($opt_ghosts);
-my @BACKBONES=SystemManagement::Ghosts::Expanded($systype);
+Load($opt_ghosts);
+Load(UserConfig());
+my @BACKBONES=Expanded($systype);
 
 my $TMP = tempdir( CLEANUP => 1 );
 
