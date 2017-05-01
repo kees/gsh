@@ -124,7 +124,7 @@ sub UserConfig {
    foreach my $config (map { $HOME . $_ } @GHOSTS_USER) {
       return $config if -e $config;
    }
-   return '';
+   return undef;
 }
 
 1;
