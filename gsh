@@ -152,6 +152,9 @@ pod2usage(-verbose => 1, -exitstatus => 0) if ($opt_help);
 Version() if ($opt_version);
 
 my $systype = shift(@ARGV);		# get name representing set of hosts
+if ($systype =~ m/^(.+)@(.+)$/)	{	# user specified as part of systype,
+  ($opt_user, $systype) = ($1, $2);	#  e.g. 'root@myhostspec'
+}
 my $cmd = join(' ',@ARGV);		# remaining args constitute the command
 $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
 
