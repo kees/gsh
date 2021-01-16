@@ -26,19 +26,6 @@ sub Load {
 	close(GHOSTS_FILE);
 }
 
-sub CheckGhostFor {
-	my($machine,$what) = @_;
-	my(@result,$list);
-
-	@result=ParseGhosts(0,$what);
-	$list=":".join(":",@result).":";
-
-#	print "$what ($machine) sees $list\n";
-
-	return 1 if ($list =~ /:$machine:/);
-	return 0;
-}
-
 sub ParseGhosts {
 	my ($depth, @what) = @_;
 
