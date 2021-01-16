@@ -1,4 +1,5 @@
 package SystemManagement::Ghosts;
+
 use warnings;
 use strict;
 
@@ -11,17 +12,16 @@ $me =~ s|.*/(.*)|$1|;
 # loads the ghosts file into @sysadmin_ghosts
 sub Load {
 	my ($file) = @_;
-	$file=$GHOSTS_PATH if (!$file || $file eq "");
-	open(GHOSTS_FILE,"<${file}") ||
+	$file = $GHOSTS_PATH if (!defined($file) || $file eq "");
+	open(GHOSTS_FILE, "<${file}") ||
 		die "$me: cannot open host file \"${file}\": $!\n";
+	local $_;
 	while (<GHOSTS_FILE>) {
 		# kill blank lines
-		s/[ \t]*\n//;
-		my $line = $_;
+		s/^\s+//;
 		# kill commented or blank lines
-		if ($line ne "" && $line !~ /^#/) {
-			push(@GHOSTS,$line);
-		}
+		next if /^#/ || /^\s*$/;
+		push(@GHOSTS, $_);
 	}
 	close(GHOSTS_FILE);
 }
