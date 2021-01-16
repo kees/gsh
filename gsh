@@ -147,6 +147,8 @@ pod2usage(-verbose => 1, -exitstatus => 0) if ($opt_help);
 
 Version() if ($opt_version);
 
+my $me = $0;
+$me =~ s|.*/(.*)|$1|;
 my $systype = shift(@ARGV);		# get name representing set of hosts
 my $cmd = join(' ',@ARGV);		# remaining args constitute the command
 $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
@@ -154,7 +156,7 @@ $cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
 pod2usage(-verbose => 0, -exitstatus => -1) if ($cmd eq "");
 
 SystemManagement::Ghosts::Load($opt_ghosts);
-my @BACKBONES=SystemManagement::Ghosts::Expanded($systype);
+my @BACKBONES = SystemManagement::Ghosts::Objects($systype);
 
 my $TMP = tempdir( CLEANUP => 1 );
 
@@ -192,7 +194,10 @@ $ssh_args.=$opt_user ? " -l $opt_user" : "";
 
 # for each machine that matched the ghosts systype do the following:
 my $oldcmd = $cmd;
-foreach my $host (@BACKBONES) {
+foreach my $ghost (@BACKBONES) {
+	my $host = $ghost->host;
+	my $port = $ghost->port;
+	my $user = $ghost->user;
 
 	# clear this machine's output buffer
 	$output{$host}="";
@@ -203,15 +208,15 @@ foreach my $host (@BACKBONES) {
 #	push(@tried,$host);
 	# do the fork
 	my $pid = fork();			# fork
-	if ($pid==0) {
+	if ($pid == 0) {
 
-		open(STDOUT,">$TMP/gsh.$$");	# open stdout to tmp file
-		open(STDERR,">&STDOUT");	# dup stderr to stdout
+		open(STDOUT, ">$TMP/gsh.$$");	# open stdout to tmp file
+		open(STDERR, ">&STDOUT");	# dup stderr to stdout
 						# this results in rather
 						# broken output sometimes
 						# maybe have two files?
         # get rid of STDIN (but after the reopens, so a new FD isn't fd 1)
-		close(STDIN) if (!$opt_open_stdin);
+		close(STDIN) unless $opt_open_stdin;
 
 		select(STDERR); $|=1;		# set outputs to unbuffered
 		select(STDOUT); $|=1;
@@ -219,15 +224,21 @@ foreach my $host (@BACKBONES) {
 		$cmd = $oldcmd;
 		$cmd =~ s/\$host/$host/gi;
 
-		if ( $opt_run_locally ||
-             (!$opt_self_remote &&
-                      ( ($host !~ /\./ && $host eq $self_host_short) ||
-                        $host eq $self_host)
-             )
-           ) {
+		if (
+			$opt_run_locally || (
+				!$opt_self_remote && (
+					($host !~ /\./ && $host eq $self_host_short) ||
+					$host eq $self_host
+				)
+			)
+		) {
 			exec "$cmd 2>&1";	# exec the cmd
 		} else {
-			exec "ssh$ssh_args -o BatchMode=yes $host '$cmd' 2>&1";  # exec the ssh
+			my $extra = "";
+			$extra .= "-p $port " if defined $port;
+			$extra .= "$user@" if defined $user;
+			# run ssh
+			exec "ssh$ssh_args -o BatchMode=yes $extra$host '$cmd' 2>&1";
 		}
 
 		# should never get to next line
@@ -235,18 +246,17 @@ foreach my $host (@BACKBONES) {
 	}
 	elsif (!$pid) {				# report failures
 		# !$pid is true for 0 also...
-		warn "Couldn't fork to '$host': $!\n";
+		warn "$me: couldn't fork for '$host': $!\n";
 	}
 	else {
-		print "#spawned $pid for $host\n" if ($opt_debug);
-		print STDERR "$host " if ($showpid);
-		$pidlist{$pid}=$host;		# record the child's pid
+		print "#spawned $pid for $host\n" if $opt_debug;
+		print STDERR "$host " if $showpid;
+		$pidlist{$pid} = $host;		# record the child's pid
 	}
-#    }
 }
 close(STDIN);
 
-my $waitfail=0;
+my $waitfail = 0;
 #$forked = join(' ',@tried);
 
 # sometimes wait will return a -1.  I'm not sure what this is.  I've read
@@ -275,12 +285,12 @@ while (defined($togo)) {
 		$before = $togo;
 	}
 	else {
-		$cycles ++;
+		$cycles++;
 	}
 
 	if ($cycles >= ($signals ? 5 : 0)) {
 		if ($viewwaiting || $opt_debug) {
-			$viewwaiting=0;
+			$viewwaiting = 0;
 			print STDERR "Waiting on: ";
 			foreach (keys %pidlist) {
 				print STDERR "$pidlist{$_} ";
@@ -289,7 +299,7 @@ while (defined($togo)) {
 		}
 		# if we catch something greater than 0, call SIGCHLD directly
 		if ((my $pid = waitpid(-1,&WNOHANG))>0) {
-			gsh_catch('',$pid);
+			gsh_catch('', $pid);
 		}
 	}
 
@@ -459,3 +469,5 @@ of the License, or (at your option) any later version.
 Revision: $Revision $
 
 =cut
+
+# vi: set ts=4 sw=4:

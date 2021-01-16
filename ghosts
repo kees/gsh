@@ -20,14 +20,25 @@ host's membership in a given group.  In the example below, there are two
 machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
 "e450" group, etc:
 
+        # Blank lines are ignored, so are #-commented ones
         # Macros
-        sunprod=solaris^e450
+        sunprod = solaris ^ e450
+
         # Machines
-        #
         # Name          Group           Hardware        OS
         bilbo           prod            intel           linux
         baggins         prod            e4500           solaris
         tolkien         devel           e450            solaris
+
+        # If you use another SSH port, you can specify it
+        # Note that there is no need define all the columns!
+        frodo:2222      mordor
+
+        # You can also specify a different user to connect to
+        # That will supersede any '-l' you supply
+        # And you can have user + port if needed
+        me@gandalf          mordor
+        me@legolas:2333     mordor
 
 Machine groups can be combined logically with the "+" and "^" characters
 to produce composite groups.  For example:
