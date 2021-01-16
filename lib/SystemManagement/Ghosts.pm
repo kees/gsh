@@ -40,10 +40,11 @@ sub CheckGhostFor {
 }
 
 sub ParseGhosts {
-	my($depth,@what) = @_;
+	my ($depth, @what) = @_;
 
-	if ($depth>10) {
-		print STDERR "ParseGhosts: recurrsive macro?  Depth == 10 at '".join(',',@what)."'\n";
+	if ($depth > 10) {
+		warn "ParseGhosts: recurrsive macro?  Depth == 10 at '" .
+			join(',',@what) . "'\n";
 		return ("");
 	}
 
@@ -58,7 +59,7 @@ sub ParseGhosts {
 
 #	warn "ParseGhosts[$depth]: expanding '$one_of_these'\n";
 	my @repl;
-	Load() if ($#GHOSTS<0);
+	Load() if ($#GHOSTS < 0);
 	foreach my $line (@GHOSTS) {           # for each line of ghosts
 		if ($line =~ /^(\w+)=(.+)/) {         # a macro line?
         		my $name = $1;
