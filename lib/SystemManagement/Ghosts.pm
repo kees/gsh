@@ -7,11 +7,10 @@ my @GHOSTS;    # all the lines of the ghosts file
 
 # loads the ghosts file into @sysadmin_ghosts
 sub Load {
-	my($file) = @_;
-	my($line);
+	my ($file) = @_;
 	$file=$GHOSTS_PATH if (!$file || $file eq "");
 	open(GHOSTS_FILE,"<${file}") ||
-		warn("$0: Cannot open \"${file}\": $!\n");
+		warn "$0: Cannot open \"${file}\": $!\n";
 	while (<GHOSTS_FILE>) {
 		# kill blank lines
 		s/[ \t]*\n//;
