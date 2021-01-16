@@ -5,12 +5,15 @@ use strict;
 my $GHOSTS_PATH="/etc/ghosts";
 my @GHOSTS;    # all the lines of the ghosts file
 
+my $me = $0;
+$me =~ s|.*/(.*)|$1|;
+
 # loads the ghosts file into @sysadmin_ghosts
 sub Load {
 	my ($file) = @_;
 	$file=$GHOSTS_PATH if (!$file || $file eq "");
 	open(GHOSTS_FILE,"<${file}") ||
-		warn "$0: Cannot open \"${file}\": $!\n";
+		die "$me: cannot open host file \"${file}\": $!\n";
 	while (<GHOSTS_FILE>) {
 		# kill blank lines
 		s/[ \t]*\n//;
