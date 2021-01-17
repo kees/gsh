@@ -164,7 +164,14 @@ GetOptions("help|h",
  )
 or pod2usage(-verbose => 0, -exitstatus => 1);
 
-pod2usage(-verbose => 1, -exitstatus => 0) if ($opt_help);
+if ($opt_help) {
+	my $out = \*STDOUT;
+	if (-t STDOUT) {
+		my $pager = $ENV{PAGER} || "more";
+		$out = \*PAGER if open(PAGER, "| $pager");
+	}
+	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
+}
 
 Version() if ($opt_version);
 
