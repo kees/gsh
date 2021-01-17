@@ -298,7 +298,7 @@ foreach my $ghost (@BACKBONES) {
 			my $sshport = $port || 22;
 			my $sshuser = $username;
 			$sshuser = $remote_user if $remote_user;
-			$sshuser = $user if defined($user) && !$opt_force_user;
+			$sshuser = $user if defined($user);
 
 			@list = map {
 				s/\$host/$host/g;
