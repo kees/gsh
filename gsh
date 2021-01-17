@@ -620,9 +620,11 @@ I bet.
 
 perl(1), ghosts(1), ssh(1), SystemManagement::Ghosts(1)
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Kees Cook E<lt>kees@outflux.netE<gt>
+
+Raphael Manfredi E<lt>Raphael_Manfredi@pobox.comE<gt>
 
 L<http://www.outflux.net/|http://www.outflux.net/>
 
