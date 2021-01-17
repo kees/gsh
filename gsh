@@ -20,6 +20,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -i, --immediate       Show output when ready, do not wait to sort by host
  -p, --no-host-prefix  Does not prefix output lines with the host name
  -s, --show-commands   Displays the command before the output report
+ -t, --tabulate        Align host output and prefixes nicely
  -n, --open-stdin      Leaves stdin open when running (scary!)
  -l, --user USER       SSH's to the host as user USER
  -r, --run-locally     Run commands locally (replaces some $var for you)
@@ -122,6 +123,12 @@ Turns off the prefixing of hostnames to the output reports.
 
 Displays the command being run before the output report for each host.
 
+=item B<-t>, B<--tabulate>
+
+Align start of command output nicely after the initial host prefix.  This
+requires large terminal width, greater than 80 columns or line wrapping will
+add visual clutter.
+
 =item B<-n>, B<--open-stdin>
 
 Leave stdin open when SSH'ing.  This can cause hangs and other strange
@@ -185,6 +192,7 @@ our $opt_copy_to = "";
 our $opt_debug = 0;
 our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
 our $opt_immediate = 0;
+our $opt_tabulate = 0;
 our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
 our $opt_open_stdin = 0;
@@ -204,6 +212,7 @@ GetOptions(
 	"immediate|i",
 	"no-host-prefix|p",
 	"show-command|s",
+	"tabulate|t",
 	"open-stdin|n",
 	"user|l=s",
 	"run-locally|r",
@@ -289,6 +298,12 @@ if ($opt_copy_to) {
 	push(@ssh_args, "-l", $remote_user) if $remote_user;
 }
 
+if ($opt_tabulate) {
+	# Compute max host name length
+	$opt_tabulate =
+		(sort { $b <=> $a } map { length($_->host) } @BACKBONES)[0];
+}
+
 # for each machine that matched the ghosts systype do the following:
 foreach my $ghost (@BACKBONES) {
 	my $host = $ghost->host;
@@ -308,7 +323,9 @@ foreach my $ghost (@BACKBONES) {
 	$output{$host} = "";
 
 	# make a column header for this machine if needed
-	$showlist{$host} = $opt_no_host_prefix ? "" : "$host: ";
+	my $space = "";
+	$space = " " x ($opt_tabulate - length($host)) if $opt_tabulate;
+	$showlist{$host} = $opt_no_host_prefix ? "" : "$host$space: ";
 
 #	push(@tried,$host);
 	# do the fork
