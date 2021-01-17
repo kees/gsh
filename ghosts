@@ -12,6 +12,7 @@ ghosts [OPTIONS] SYSTEMS
 
  -h, --help            Display full help
  -g, --ghosts          Use specified ghosts configuration file
+ -1, --list            List each matching host on a line by itself
 
 =head1 DESCRIPTION
 
@@ -65,8 +66,15 @@ Displays this full help.
 
 =item B<-g>, B<--ghosts> CONFIG_FILE
 
-Uses the provided ghosts configuration file, instead of /etc/ghosts. This
-means /etc/ghosts will not be read at all.
+Uses the provided ghosts configuration file, instead of C</etc/ghosts>. This
+means C</etc/ghosts> will not be read at all.
+
+=item B<-1>, B<--list>
+
+Lists hosts on a one-per-line basis.  The short option is the digit B<1> (one),
+not the letter "ell".
+
+This allows easy output post-processing with C<sort>, C<grep>, etc.
 
 =back
 
@@ -81,14 +89,16 @@ $me =~ s|.*/(.*)|$1|;
 
 our $opt_help = 0;
 our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
+our $opt_list = 0;
  
 GetOptions(
 	"help|h",
-	"ghosts|g=s"
+	"ghosts|g=s",
+	"list|1"
 ) or pod2usage(-verbose => 0, -exitstatus => 1);
 
 pod2usage(-verbose => 2, -exitstatus => 0) if $opt_help;
-pod2usage(-verbose => 0, -exitstatus => 1) if $#ARGV < 0;
+pod2usage(-verbose => 0, -exitstatus => 1) unless @ARGV;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Expanded(@ARGV);
@@ -97,7 +107,8 @@ if (scalar @BACKBONES == 0) {
 	die "$me  no matching hosts found in $opt_ghosts\n";
 } else {
 	# prints which machines match the argument list
-	print join(" ",@BACKBONES),"\n";
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @BACKBONES), "\n";
 }
 
 =head1 PREREQUISITES
