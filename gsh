@@ -12,6 +12,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  CMD is the command to run
 
  -h, --help            Display full help
+ -b, --banner          Add one-line banner before each host output
  -d, --debug           Turn on exeuction debugging reports
  -g, --ghosts          specific ghosts configuration file
  -p, --no-host-prefix  Does not prefix output lines with the host name
@@ -69,6 +70,14 @@ use Pod::Usage;
 =item B<-h>, B<--help>
 
 Displays this help.
+
+=item B<-b>, B<--banner>
+
+Emit an 80-column one-line banner at the top of each host output, listing
+the host name.
+
+This can be used along with B<-p> to limit visual clutter in the output
+and yet be able to distinguish easily each host output.
 
 =item B<-d>, B<--debug>
 
@@ -128,6 +137,7 @@ Displays the version information and exits.
 =cut
 
 our $opt_help = 0;
+our $opt_banner = 0;
 our $opt_debug = 0;
 our $opt_ghosts = "";
 our $opt_no_host_prefix = 0;
@@ -140,6 +150,7 @@ our $opt_self_remote = 0;
 our $opt_version = 0;
 
 GetOptions("help|h",
+           "banner|b",
            "debug|d",
            "ghosts|g=s",
            "no-host-prefix|p",
@@ -429,6 +440,7 @@ sub gsh_catch {
 		# which machine finished?
 		$host = $pidlist{$pid};
 		print "\n#$type $pid $host\n" if $opt_debug;
+		$output{$host} .= banner($host) if $opt_banner;
 		$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
 			if $opt_show_command;
 		# make a unique filehandle name: handler needs to be reentrant
@@ -457,6 +469,16 @@ sub ReportWaiting {
 	$viewwaiting=1;
 	# on bad systems, you may need to do this
 	#$SIG{'USR1'} = 'ReportWaiting';		# install USR1 handler
+}
+
+# Generate 80-column banner string with centered host name.
+sub banner {
+	my ($host) = @_;
+	my $c = '=';
+	my $prefix = $showlist{$host};
+	my $len = 80 - 2 - length($host) - length($prefix);
+	return $prefix .
+		$c x int($len / 2 + 0.5) . " $host " . $c x int($len / 2) . "\n";
 }
 
 sub Version {
