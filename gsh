@@ -23,6 +23,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -l, --user USER       SSH's to the host as user USER
  -r, --run-locally     Run commands locally (replaces some $var for you)
  -o, --self-remote     Run locally instead of over SSH for local host
+ -C, --copy DIR        Copies specified files to remote DIR on each host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
 
@@ -140,6 +141,22 @@ to, gsh will just run the command locally instead of attempting to SSH
 back to the local machine.  If you want gsh to SSH to the local machine
 anyway, turn this option on.
 
+=item B<-C>, B<--copy-to> DIR
+
+Instead of running SSH, SCP will be used to copy all the specified
+files to the remote DIR on each host.
+
+For instance:
+
+	gsh -C /tmp all file1 file2 /path/file3
+
+would create a copy of all the specified files in the C</tmp> directory
+of all hosts.
+
+A report simply lists success or failure, but does not give detail about
+which files could not be copied remotely (insufficient permission on
+the remote host, I/O error, etc.).
+
 =item B<-L>, B<--force-user> USER
 
 SSH as a user USER on the remote machines, superseding any USER
@@ -157,6 +174,7 @@ our $opt_help = 0;
 our $opt_manpage = 0;
 our $opt_alive = 0;
 our $opt_banner = 0;
+our $opt_copy_to = "";
 our $opt_debug = 0;
 our $opt_ghosts = "";
 our $opt_immediate = 0;
@@ -183,6 +201,7 @@ GetOptions(
 	"user|l=s",
 	"run-locally|r",
 	"self-remote|o",
+	"copy-to|C=s",
 	"force-user|L=s",
 	"version|V",
 )
@@ -243,11 +262,24 @@ $self_host_short=~s/\..*$//;
 # Our (real, not effective) user name
 my $username = (getpwuid($<))[0];
 
-# SSH arguments
-my $remote_user = $opt_force_user || $opt_user;
 my @ssh_args = ();
-push(@ssh_args, "-n") if $opt_open_stdin;
-push(@ssh_args, "-l", $remote_user) if $remote_user;
+my $remote_user = $opt_force_user || $opt_user;
+
+if ($opt_copy_to) {
+	# We also need to validate that entries can be copied
+	foreach my $file (@cmd) {
+		die "$me: '$file' does not exist\n" unless -e $file;
+		die "$me: '$file' is a directory\n" if -d _;
+		die "$me: '$file' is a device\n" if (-b _ || -c _);
+		die "$me: '$file' is a pipe\n" if -p _;
+		die "$me: '$file' is a socket\n" if -S _;
+		die "$me: '$file' is unreadable\n" unless -r _;
+	}
+} else {
+	# SSH arguments
+	push(@ssh_args, "-n") if $opt_open_stdin;
+	push(@ssh_args, "-l", $remote_user) if $remote_user;
+}
 
 # for each machine that matched the ghosts systype do the following:
 foreach my $ghost (@BACKBONES) {
@@ -310,6 +342,12 @@ foreach my $ghost (@BACKBONES) {
 			@list = @cmd;
 		}
 
+		my $dir = '';
+		if ($opt_copy_to) {
+			$dir = $opt_copy_to;
+			$dir .= "/" unless $dir =~ m|/$|;
+		}
+
 		if (
 			$opt_run_locally || (
 				!$opt_self_remote && (
@@ -318,13 +356,26 @@ foreach my $ghost (@BACKBONES) {
 				)
 			)
 		) {
+			if ($opt_copy_to) {
+				unshift(@list, "cp");
+				push(@list, $dir);
+			}
 			exec @list;		# exec the cmd locally
 		} else {
 			my @extra = ();
-			push(@extra, "-p", $port) if defined $port;
-			push(@extra, defined($user) ? "$user@$host" : $host);
-			my @ssh = ("ssh", @ssh_args, "-o", "BatchMode=yes", @extra, @list);
-			exec @ssh;
+			my @run;
+			if ($opt_copy_to) {
+				push(@extra, "-P", $port) if defined $port;
+				$user = $remote_user if ($remote_user && !defined($user));
+				my $target = defined($user) ? "$user\@host" : $host;
+				push(@list, "$target:$dir");
+				@run = ("scp", "-o", "BatchMode=yes", @extra, @list);
+			} else {
+				push(@extra, "-p", $port) if defined $port;
+				push(@extra, defined($user) ? "$user@$host" : $host);
+				@run = ("ssh", @ssh_args, "-o", "BatchMode=yes", @extra, @list);
+			}
+			exec @run;
 		}
 
 		# should never get to next line
