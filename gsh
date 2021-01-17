@@ -218,7 +218,7 @@ foreach my $ghost (@BACKBONES) {
 	$output{$host}="";
 
 	# make a column header for this machine if needed
-	$showlist{$host} = $opt_no_host_prefix ? "" : "$host:\t";
+	$showlist{$host} = $opt_no_host_prefix ? "" : "$host: ";
 
 #	push(@tried,$host);
 	# do the fork
@@ -429,7 +429,7 @@ sub gsh_catch {
 		# which machine finished?
 		$host = $pidlist{$pid};
 		print "\n#$type $pid $host\n" if $opt_debug;
-		$output{$host} .= "$host: " .join(' ', @cmd) . "\n"
+		$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
 			if $opt_show_command;
 		# make a unique filehandle name: handler needs to be reentrant
 		my $READ = undef; #time . "$pid";
