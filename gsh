@@ -12,6 +12,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  CMD is the command to run
 
  -h, --help            Display full help
+ -H, --manpage         Display full man page
  -a, --alive SECONDS   Skip hosts that cannot be pinged after SECONDS secs
  -b, --banner          Add one-line banner before each host output
  -d, --debug           Turn on exeuction debugging reports
