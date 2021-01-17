@@ -666,10 +666,6 @@ modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 
-=head1 REVISION
-
-Revision: $Revision $
-
 =cut
 
 # vi: set ts=4 sw=4:
