@@ -459,14 +459,18 @@ sub ReportWaiting {
 	#$SIG{'USR1'} = 'ReportWaiting';		# install USR1 handler
 }
 
-sub Version
-{
-    print "$NAME version $VERSION\n";
-    print "Copyright 1998-2014 Kees Cook <kees\@outflux.net>\n";
-    print "This program is free software; you can redistribute it and/or\n";
-    print "modify it under the terms of the GNU General Public License\n";
-    print "as published by the Free Software Foundation; either version 2\n";
-    print "of the License, or (at your option) any later version.\n";
+sub Version {
+	print "$NAME version $VERSION\n";
+	print <<'EOM';
+
+Copyright 1998-2014 Kees Cook <kees@outflux.net>
+Copyright 2021 Raphael Manfredi <Raphael_Manfredi@pobox.com>
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+EOM
     exit(0);
 }
 
