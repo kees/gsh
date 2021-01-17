@@ -454,18 +454,47 @@ sub quit {
 	# for each child, kill the child, then unlink it's output file
 	foreach my $pid (keys %pidlist) {
 		print "#cleaning up pid: $pid\n" if ($opt_debug);
-		kill 2, $pid;
+		my $host = $pidlist{$pid};
+		warn "$me: sent INTR to stop command to host '$host'\n"
+			if kill(2, $pid);
+		grab_output($pid);
+		print $output{$host} unless $output{$host} eq ".";
 		unlink("$TMP/gsh.$pid");
 	}
 	# kill self, but not with signal to allow /tmp cleanup
 	exit 1;
 }
 
+# Grap output from finished child within $output{$host}
+sub grab_output {
+	my ($pid) = @_;
+	# which machine finished?
+	my $host = $pidlist{$pid};
+	print "\n# grab_output $pid $host\n" if $opt_debug;
+	$output{$host} .= banner($host) if $opt_banner;
+	$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
+		if $opt_show_command;
+	# make a unique filehandle name: handler needs to be reentrant
+	my $READ = undef;		#time . "$pid";
+	if (!open($READ, "<$TMP/gsh.$pid")) {
+		$output{$host} .= "$showlist{$host}error with output read: $!\n";
+	}
+	my $length = $opt_show_command;
+	local $_;
+	while (<$READ>) {
+		$output{$host} .= $showlist{$host} . $_;
+		$length += length($_) unless $length;
+	}
+	# if there was no output, signal to the output printing loops
+	$output{$host} = "." if 0 == $length;
+	close($READ);
+}
+
 # sig handler for when a child dies
 sub gsh_catch {
 	# first arg is signal caught, second only comes if we force a call
-	my($undef,$forwarded) = @_;
-	my($pid,$host,$type);
+	my ($undef, $forwarded) = @_;
+	my ($pid, $host, $type);
 
 	if ($forwarded) {
 		$pid = $forwarded;
@@ -481,28 +510,7 @@ sub gsh_catch {
 		print "Missed a child??!  May have to Ctrl-C out.\n";
 	}
 	else {
-		# which machine finished?
-		$host = $pidlist{$pid};
-		print "\n#$type $pid $host\n" if $opt_debug;
-		$output{$host} .= banner($host) if $opt_banner;
-		$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
-			if $opt_show_command;
-		# make a unique filehandle name: handler needs to be reentrant
-		my $READ = undef; #time . "$pid";
-		if (!open($READ,"<$TMP/gsh.$pid")) {
-			$output{$host} .= "$showlist{$host}error with output recording\n";
-		}
-		while (<$READ>) {
-			$output{$host} .= $showlist{$host} . $_;
-		}
-		# if there was no output, signal to the output printing loops
-		if ($output{$host} eq "") {
-			$output{$host} = ".";
-		}
-#		if ($output{$host} eq "" && $showlist{$host} ne "") {
-#			$output{$host} = "$showlist{$host}\n";
-#		}
-		close($READ);
+		grab_output($pid);
 		unlink("$TMP/gsh.$pid");	# clean up
 #		$forked =~ s/$pidlist{$pid}//;
 		delete $pidlist{$pid};		# remove from pending pid list
