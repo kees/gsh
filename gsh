@@ -14,7 +14,8 @@ gsh [OPTIONS] SYSTEMS CMD...
  -h, --help            Display full help
  -b, --banner          Add one-line banner before each host output
  -d, --debug           Turn on exeuction debugging reports
- -g, --ghosts          specific ghosts configuration file
+ -g, --ghosts          Use specified ghosts configuration file
+ -i, --immediate       Show output when ready, do not wait to sort by host
  -p, --no-host-prefix  Does not prefix output lines with the host name
  -s, --show-commands   Displays the command before the output report
  -n, --open-stdin      Leaves stdin open when running (scary!)
@@ -89,6 +90,13 @@ are show as commands are executed and reaped.
 Uses the provided ghosts configuration file, instead of /etc/ghosts. This
 means /etc/ghosts will not be read, at all.
 
+=item B<-i>, B<--immediate>
+
+As soon as a host finishes running its command, display the output.
+
+The default behaviour is to wait so that we can sort the output
+alphabetically by host name.
+
 =item B<-p>, B<--no-host-prefix>
 
 Turns off the prefixing of hostnames to the output reports.
@@ -140,6 +148,7 @@ our $opt_help = 0;
 our $opt_banner = 0;
 our $opt_debug = 0;
 our $opt_ghosts = "";
+our $opt_immediate = 0;
 our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
 our $opt_open_stdin = 0;
@@ -149,19 +158,21 @@ our $opt_run_locally = 0;
 our $opt_self_remote = 0;
 our $opt_version = 0;
 
-GetOptions("help|h",
-           "banner|b",
-           "debug|d",
-           "ghosts|g=s",
-           "no-host-prefix|p",
-           "show-command|s",
-           "open-stdin|n",
-           "user|l=s",
-           "run-locally|r",
-           "self-remote|o",
-           "force-user|L=s",
-           "version|V",
- )
+GetOptions(
+	"help|h",
+	"banner|b",
+	"debug|d",
+	"ghosts|g=s",
+	"immediate|i",
+	"no-host-prefix|p",
+	"show-command|s",
+	"open-stdin|n",
+	"user|l=s",
+	"run-locally|r",
+	"self-remote|o",
+	"force-user|L=s",
+	"version|V",
+)
 or pod2usage(-verbose => 0, -exitstatus => 1);
 
 if ($opt_help) {
@@ -173,7 +184,7 @@ if ($opt_help) {
 	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
 }
 
-Version() if ($opt_version);
+Version() if $opt_version;
 
 my $me = $0;
 $me =~ s|.*/(.*)|$1|;
@@ -357,7 +368,7 @@ while (defined($togo)) {
 		}
 	}
 
-	show_output(1);
+	show_output(!$opt_immediate);
 
 	# wait for a half second
 	select(undef,undef,undef,0.5) if ($opt_debug);
