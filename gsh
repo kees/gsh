@@ -20,6 +20,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -l, --user USER       SSH's to the host as user USER
  -r, --run-locally     Run commands locally (replaces $host with host)
  -o, --self-remote     Run locally instead of over SSH for local host
+ -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
 
 =head1 DESCRIPTION
@@ -95,7 +96,8 @@ pipe input to all of the child processes.
 
 =item B<-l>, B<--user> USER
 
-SSH as a user USER on the remote machines.
+SSH as a user USER on the remote machines, but without superseding any
+USER specified in the ghosts file for a given host.  Use B<-L> to force.
 
 =item B<-r>, B<--run-locally>
 
@@ -110,6 +112,11 @@ Normally, if the local host running gsh is listed among the hosts to SSH
 to, gsh will just run the command locally instead of attempting to SSH
 back to the local machine.  If you want gsh to SSH to the local machine
 anyway, turn this option on.
+
+=item B<-L>, B<--force-user> USER
+
+SSH as a user USER on the remote machines, superseding any USER
+configuration specified in the ghosts file.  See also B<-l>.
 
 =item B<-V>, B<--version>
 
@@ -126,6 +133,7 @@ our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
 our $opt_open_stdin = 0;
 our $opt_user = 0;
+our $opt_force_user = 0;
 our $opt_run_locally = 0;
 our $opt_self_remote = 0;
 our $opt_version = 0;
@@ -139,6 +147,7 @@ GetOptions("help|h",
            "user|l=s",
            "run-locally|r",
            "self-remote|o",
+           "force-user|L=s",
            "version|V",
  )
 or pod2usage(-verbose => 0, -exitstatus => 1);
@@ -188,9 +197,10 @@ my $self_host_short = $self_host;
 $self_host_short=~s/\..*$//;
 
 # SSH arguments
-my $ssh_args="";
-$ssh_args.=$opt_open_stdin ? "" : " -n";
-$ssh_args.=$opt_user ? " -l $opt_user" : "";
+my $remote_user = $opt_force_user || $opt_user;
+my $ssh_args = "";
+$ssh_args .= $opt_open_stdin ? "" : " -n";
+$ssh_args .= $remote_user ? " -l $remote_user" : "";
 
 # for each machine that matched the ghosts systype do the following:
 my $oldcmd = $cmd;
@@ -198,6 +208,9 @@ foreach my $ghost (@BACKBONES) {
 	my $host = $ghost->host;
 	my $port = $ghost->port;
 	my $user = $ghost->user;
+
+	# A -L USER supersedes any USER definition from ghosts
+	undef $user if $opt_force_user;
 
 	# clear this machine's output buffer
 	$output{$host}="";
