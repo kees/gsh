@@ -18,13 +18,13 @@ gsh [OPTIONS] SYSTEMS CMD...
  -d, --debug           Turn on exeuction debugging reports
  -g, --ghosts          Use specified ghosts configuration file
  -i, --immediate       Show output when ready, do not wait to sort by host
+ -l, --user USER       SSH's to the host as user USER
+ -n, --open-stdin      Leaves stdin open when running (scary!)
+ -o, --self-remote     Run locally instead of over SSH for local host
  -p, --no-host-prefix  Does not prefix output lines with the host name
+ -r, --run-locally     Run commands locally (replaces some $var for you)
  -s, --show-commands   Displays the command before the output report
  -t, --tabulate        Align host output and prefixes nicely
- -n, --open-stdin      Leaves stdin open when running (scary!)
- -l, --user USER       SSH's to the host as user USER
- -r, --run-locally     Run commands locally (replaces some $var for you)
- -o, --self-remote     Run locally instead of over SSH for local host
  -C, --copy DIR        Copies specified files to remote DIR on each host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
@@ -115,9 +115,35 @@ As soon as a host finishes running its command, display the output.
 The default behaviour is to wait so that we can sort the output
 alphabetically by host name.
 
+=item B<-l>, B<--user> USER
+
+SSH as a user USER on the remote machines, but without superseding any
+USER specified in the ghosts file for a given host.  Use B<-L> to force.
+
+=item B<-n>, B<--open-stdin>
+
+Leave stdin open when SSH'ing.  This can cause hangs and other strange
+situations, but can be useful in uncommon situations where you need to
+pipe input to all of the child processes.
+
+=item B<-o>, B<--self-remote>
+
+Normally, if the local host running gsh is listed among the hosts to SSH
+to, gsh will just run the command locally instead of attempting to SSH
+back to the local machine.  If you want gsh to SSH to the local machine
+anyway, turn this option on.
+
 =item B<-p>, B<--no-host-prefix>
 
 Turns off the prefixing of hostnames to the output reports.
+
+=item B<-r>, B<--run-locally>
+
+Instead of SSH'ing to hosts, run the commands locally.  The string '$host'
+will be replaced with the name of the current host, '$port' with the remote
+SSH port and '$user' with the remote user.  For example:
+
+  gsh -r all 'echo $user@$host:$port'
 
 =item B<-s>, B<--show-command>
 
@@ -128,32 +154,6 @@ Displays the command being run before the output report for each host.
 Align start of command output nicely after the initial host prefix.  This
 requires large terminal width, greater than 80 columns or line wrapping will
 add visual clutter.
-
-=item B<-n>, B<--open-stdin>
-
-Leave stdin open when SSH'ing.  This can cause hangs and other strange
-situations, but can be useful in uncommon situations where you need to
-pipe input to all of the child processes.
-
-=item B<-l>, B<--user> USER
-
-SSH as a user USER on the remote machines, but without superseding any
-USER specified in the ghosts file for a given host.  Use B<-L> to force.
-
-=item B<-r>, B<--run-locally>
-
-Instead of SSH'ing to hosts, run the commands locally.  The string '$host'
-will be replaced with the name of the current host, '$port' with the remote
-SSH port and '$user' with the remote user.  For example:
-
-  gsh -r all 'echo $user@$host:$port'
-
-=item B<-o>, B<--self-remote>
-
-Normally, if the local host running gsh is listed among the hosts to SSH
-to, gsh will just run the command locally instead of attempting to SSH
-back to the local machine.  If you want gsh to SSH to the local machine
-anyway, turn this option on.
 
 =item B<-C>, B<--copy-to> DIR
 
