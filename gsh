@@ -350,21 +350,7 @@ while (defined($togo)) {
 		}
 	}
 
-	# this loop checks to see if there is any output waiting to be
-	# printed.  Since we're going it alphabetically by machine name,
-	# it will quit immediately if it comes across an "empty" output
-	# in the alpha-sorted list of keys.
-	# a lone "." means that a machine finished without any output
-	OUTPUTLOOP:
-	foreach my $key (sort keys %output) {
-		if ($output{$key} ne "") {
-			print $output{$key} unless ($output{$key} eq ".");
-			delete $output{$key};
-		}
-		else {
-			last OUTPUTLOOP;
-		}
-	}
+	show_output(1);
 
 	# wait for a half second
 	select(undef,undef,undef,0.5) if ($opt_debug);
@@ -380,12 +366,7 @@ while (defined($togo)) {
 }
 
 # handle any other output that hadn't been printed yet
-foreach my $key (sort keys %output) {
-	if ($output{$key} ne "") {
-		print $output{$key} unless ($output{$key} eq ".");
-		delete $output{$key};
-	}
-}
+show_output(0);
 
 #print "skipped machines: $forked\n";
 #@tried=split(/\s+/,$forked);
@@ -400,6 +381,23 @@ exit(0);
 
 # subroutines
 
+sub show_output {
+	my ($waiting) = @_;
+	# This loop checks to see if there is any output waiting to be
+	# printed.  Since we're going it alphabetically by machine name,
+	# it will quit immediately if it comes across an "empty" output
+	# in the alpha-sorted list of keys.
+	# A lone "." means that a machine finished without any output.
+	foreach my $key (sort keys %output) {
+		if ($output{$key} ne "") {
+			print $output{$key} unless $output{$key} eq ".";
+			delete $output{$key};
+		}
+		elsif ($waiting) {
+			last;
+		}
+	}
+}
 
 sub quit {
 	$| = 1;
