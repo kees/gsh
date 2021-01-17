@@ -355,19 +355,19 @@ exit(0);
 
 
 sub quit {
-    $| = 1;
-    print "\r\n#caught SigInt...\n" if ($opt_debug);
-    # clear handlers
-    $SIG{'INT'} = '';
-    $SIG{'QUIT'} = '';
-# for each child, kill the child, then unlink it's output file
-    foreach my $pid (keys %pidlist) {
-	print "#cleaning up pid: $pid\n" if ($opt_debug);
-	kill 2, $pid;
-	unlink("$TMP/gsh.$pid");
-    }
-    # kill self
-    kill 2, $$;
+	$| = 1;
+	print "\r\n#caught SigInt...\n" if ($opt_debug);
+	# clear handlers
+	$SIG{'INT'} = '';
+	$SIG{'QUIT'} = '';
+	# for each child, kill the child, then unlink it's output file
+	foreach my $pid (keys %pidlist) {
+		print "#cleaning up pid: $pid\n" if ($opt_debug);
+		kill 2, $pid;
+		unlink("$TMP/gsh.$pid");
+	}
+	# kill self, but not with signal to allow /tmp cleanup
+	exit 1;
 }
 
 # sig handler for when a child dies
