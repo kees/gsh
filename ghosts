@@ -11,6 +11,7 @@ ghosts [OPTIONS] SYSTEMS
  SYSTEMS is a combination of ghost macros.  See --help for more details.
 
  -h, --help            Display full help
+ -g, --ghosts          Use specified ghosts configuration file
 
 =head1 DESCRIPTION
 
