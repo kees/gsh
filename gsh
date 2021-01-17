@@ -539,7 +539,12 @@ sub grab_output {
 		$length += length($_) unless $length;
 	}
 	# if there was no output, signal to the output printing loops
-	$output{$host} = "." if 0 == $length;
+	if (0 == $length) {
+		$output{$host} = "."
+	} elsif ($type =~ /^interrupt/)  {
+		$output{$host} .= "\n" if "\n" ne substr($output{$host}, -1);
+		$output{$host} .= $showlist{$host} . "(interrupted by signal)\n";
+	}
 	close($READ);
 }
 
