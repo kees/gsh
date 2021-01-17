@@ -182,7 +182,7 @@ our $opt_alive = 0;
 our $opt_banner = 0;
 our $opt_copy_to = "";
 our $opt_debug = 0;
-our $opt_ghosts = $ENV{GSH_HOSTS};
+our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
 our $opt_immediate = 0;
 our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
@@ -235,6 +235,7 @@ pod2usage(-verbose => 0, -exitstatus => -1) unless @cmd;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Objects($systype);
+die "$me  no matching hosts found in $opt_ghosts\n" unless @BACKBONES;
 
 my $TMP = tempdir( CLEANUP => 1 );
 

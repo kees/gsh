@@ -76,8 +76,11 @@ use SystemManagement::Ghosts;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
 
+my $me = $0;
+$me =~ s|.*/(.*)|$1|;
+
 our $opt_help = 0;
-our $opt_ghosts = $ENV{GSH_HOSTS};
+our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
  
 GetOptions(
 	"help|h",
@@ -91,8 +94,7 @@ SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Expanded(@ARGV);
 
 if (scalar @BACKBONES == 0) {
-	print "Error: no hosts found\n";
-	exit 3;
+	die "$me  no matching hosts found in $opt_ghosts\n";
 } else {
 	# prints which machines match the argument list
 	print join(" ",@BACKBONES),"\n";
