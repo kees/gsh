@@ -65,7 +65,7 @@ use strict;
 use warnings;
 
 our $NAME = "gsh";
-our $VERSION ="1.2.0";
+our $VERSION = "1.2.0";
 
 use SystemManagement::Ghosts;
 use POSIX "sys_wait_h";

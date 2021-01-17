@@ -3,7 +3,7 @@ package SystemManagement::Ghosts;
 use warnings;
 use strict;
 
-my $GHOSTS_PATH="/etc/ghosts";
+my $GHOSTS_PATH = "/etc/ghosts";
 my @GHOSTS;    # all the lines of the ghosts file
 
 my $me = $0;
@@ -112,7 +112,6 @@ sub ParseGhosts {
 			}
 			push(@repl, $ghost) if $wanted > 0;
 		}
-	next;
 	}
 	return @repl;
 }
