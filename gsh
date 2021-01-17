@@ -12,6 +12,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  CMD is the command to run
 
  -h, --help            Display full help
+ -a, --alive SECONDS   Skip hosts that cannot be pinged after SECONDS secs
  -b, --banner          Add one-line banner before each host output
  -d, --debug           Turn on exeuction debugging reports
  -g, --ghosts          Use specified ghosts configuration file
@@ -75,6 +76,10 @@ Displays this detailed help.
 =item B<-H>, B<--manpage>
 
 Displays the complete manual page (prettier if C<perldoc> is installed).
+
+=item B<-a>, B<--alive> SECONDS
+
+Issue a ping with SECONDS timeout to each host, skipping those not responding.
 
 =item B<-b>, B<--banner>
 
@@ -150,6 +155,7 @@ Displays the version information and exits.
 
 our $opt_help = 0;
 our $opt_manpage = 0;
+our $opt_alive = 0;
 our $opt_banner = 0;
 our $opt_debug = 0;
 our $opt_ghosts = "";
@@ -166,6 +172,7 @@ our $opt_version = 0;
 GetOptions(
 	"help|h",
 	"manpage|H",
+	"alive|a=i",
 	"banner|b",
 	"debug|d",
 	"ghosts|g=s",
@@ -247,6 +254,12 @@ foreach my $ghost (@BACKBONES) {
 	my $host = $ghost->host;
 	my $port = $ghost->port;
 	my $user = $ghost->user;
+
+	# Check whether host is alive when --alive was given
+	if ($opt_alive && !is_alive($host, $opt_alive)) {
+		warn "$me: skipping non-responsive host '$host'\n";
+		next;
+	}
 
 	# A -L USER supersedes any USER definition from ghosts
 	undef $user if $opt_force_user;
@@ -423,6 +436,13 @@ sub show_output {
 			last;
 		}
 	}
+}
+
+# Check whether given host is alive on the network
+sub is_alive {
+	my ($host, $secs) = @_;
+	system "ping -w $secs -q -c 1 $host >/dev/null 2>&1";
+	return 0 == $?;
 }
 
 sub quit {
