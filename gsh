@@ -436,7 +436,7 @@ while (defined($togo)) {
 		}
 		# if we catch something greater than 0, call SIGCHLD directly
 		if ((my $pid = waitpid(-1, &WNOHANG)) > 0) {
-			gsh_catch('', $pid);
+			gsh_catch('', $pid, $?);
 		}
 	}
 
@@ -508,7 +508,7 @@ sub quit {
 		my $host = $pidlist{$pid};
 		warn "$me: sent INTR to stop command to host '$host'\n"
 			if kill(2, $pid);
-		grab_output($pid);
+		grab_output($pid, 'interrupting', 0);
 		print $output{$host} unless $output{$host} eq ".";
 		unlink("$TMP/gsh.$pid");
 	}
@@ -518,19 +518,21 @@ sub quit {
 
 # Grap output from finished child within $output{$host}
 sub grab_output {
-	my ($pid) = @_;
+	my ($pid, $type, $status) = @_;
 	# which machine finished?
 	my $host = $pidlist{$pid};
-	print "\n# grab_output $pid $host\n" if $opt_debug;
+	print "\n# $type $pid $host\n" if $opt_debug;
 	$output{$host} .= banner($host) if $opt_banner;
 	$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
 		if $opt_show_command;
+	$output{$host} .= $showlist{$host} . "*** exit code was $status ***\n"
+		if $status != 0;
 	# make a unique filehandle name: handler needs to be reentrant
 	my $READ = undef;		#time . "$pid";
 	if (!open($READ, "<$TMP/gsh.$pid")) {
-		$output{$host} .= "$showlist{$host}error with output read: $!\n";
+		$output{$host} .= $showlist{$host} . "error with output read: $!\n";
 	}
-	my $length = $opt_show_command;
+	my $length = $opt_show_command + ($status != 0);
 	local $_;
 	while (<$READ>) {
 		$output{$host} .= $showlist{$host} . $_;
@@ -543,8 +545,8 @@ sub grab_output {
 
 # sig handler for when a child dies
 sub gsh_catch {
-	# first arg is signal caught, second only comes if we force a call
-	my ($undef, $forwarded) = @_;
+	# first arg is signal caught, others only come if we force a call
+	my ($undef, $forwarded, $status) = @_;
 	my ($pid, $host, $type);
 
 	if ($forwarded) {
@@ -561,7 +563,7 @@ sub gsh_catch {
 		print "Missed a child??!  May have to Ctrl-C out.\n";
 	}
 	else {
-		grab_output($pid);
+		grab_output($pid, $type, $status);
 		unlink("$TMP/gsh.$pid");	# clean up
 #		$forked =~ s/$pidlist{$pid}//;
 		delete $pidlist{$pid};		# remove from pending pid list
