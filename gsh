@@ -63,8 +63,8 @@ If unset, the default value is C</etc/ghosts>.
 use strict;
 use warnings;
 
-our $NAME="gsh";
-our $VERSION="1.1.0";
+our $NAME = "gsh";
+our $VERSION ="1.2.0";
 
 use SystemManagement::Ghosts;
 use POSIX "sys_wait_h";
