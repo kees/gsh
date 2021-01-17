@@ -493,6 +493,7 @@ L<http://www.outflux.net/|http://www.outflux.net/>
 =head1 COPYRIGHT
 
 Copyright (C) 1998-2014 Kees Cook <kees@outflux.net>
+Copyright (C) 2021 Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 Supposedly based on original code distributed with Perl Distribution.
 
