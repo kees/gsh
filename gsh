@@ -18,7 +18,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -s, --show-commands   Displays the command before the output report
  -n, --open-stdin      Leaves stdin open when running (scary!)
  -l, --user USER       SSH's to the host as user USER
- -r, --run-locally     Run commands locally (replaces $host with host)
+ -r, --run-locally     Run commands locally (replaces some $var for you)
  -o, --self-remote     Run locally instead of over SSH for local host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
@@ -102,9 +102,10 @@ USER specified in the ghosts file for a given host.  Use B<-L> to force.
 =item B<-r>, B<--run-locally>
 
 Instead of SSH'ing to hosts, run the commands locally.  The string '$host'
-will be replaced with the name of the current host.  For example:
+will be replaced with the name of the current host, '$port' with the remote
+SSH port and '$user' with the remote user.  For example:
 
-  gsh -r all 'echo $host'
+  gsh -r all 'echo $user@$host:$port'
 
 =item B<-o>, B<--self-remote>
 
@@ -159,10 +160,9 @@ Version() if ($opt_version);
 my $me = $0;
 $me =~ s|.*/(.*)|$1|;
 my $systype = shift(@ARGV);		# get name representing set of hosts
-my $cmd = join(' ',@ARGV);		# remaining args constitute the command
-$cmd =~ s/'/'"'"'/g;			# quote any embedded single quotes
+my @cmd = @ARGV;				# remaining args constitute the command
 
-pod2usage(-verbose => 0, -exitstatus => -1) if ($cmd eq "");
+pod2usage(-verbose => 0, -exitstatus => -1) unless @cmd;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Objects($systype);
@@ -196,14 +196,16 @@ chomp($self_host);
 my $self_host_short = $self_host;
 $self_host_short=~s/\..*$//;
 
+# Our (real, not effective) user name
+my $username = (getpwuid($<))[0];
+
 # SSH arguments
 my $remote_user = $opt_force_user || $opt_user;
-my $ssh_args = "";
-$ssh_args .= $opt_open_stdin ? "" : " -n";
-$ssh_args .= $remote_user ? " -l $remote_user" : "";
+my @ssh_args = ();
+push(@ssh_args, "-n") if $opt_open_stdin;
+push(@ssh_args, "-l", $remote_user) if $remote_user;
 
 # for each machine that matched the ghosts systype do the following:
-my $oldcmd = $cmd;
 foreach my $ghost (@BACKBONES) {
 	my $host = $ghost->host;
 	my $port = $ghost->port;
@@ -234,8 +236,29 @@ foreach my $ghost (@BACKBONES) {
 		select(STDERR); $|=1;		# set outputs to unbuffered
 		select(STDOUT); $|=1;
 
-		$cmd = $oldcmd;
-		$cmd =~ s/\$host/$host/gi;
+		my @list;
+
+		if ($opt_run_locally) {
+			# $var substitution done only when -r
+			#
+			# $host is the remote host
+			# $port is the SSH port that will be used
+			# $user is the SSH remote user used (from ghosts or -l / -L)
+
+			my $sshport = $port || 22;
+			my $sshuser = $username;
+			$sshuser = $remote_user if $remote_user;
+			$sshuser = $user if defined($user) && !$opt_force_user;
+
+			@list = map {
+				s/\$host/$host/g;
+				s/\$port/$sshport/g;
+				s/\$user/$sshuser/g;
+				$_
+			} @cmd;
+		} else {
+			@list = @cmd;
+		}
 
 		if (
 			$opt_run_locally || (
@@ -245,13 +268,13 @@ foreach my $ghost (@BACKBONES) {
 				)
 			)
 		) {
-			exec "$cmd 2>&1";	# exec the cmd
+			exec @list;		# exec the cmd locally
 		} else {
-			my $extra = "";
-			$extra .= "-p $port " if defined $port;
-			$extra .= "$user@" if defined $user;
-			# run ssh
-			exec "ssh$ssh_args -o BatchMode=yes $extra$host '$cmd' 2>&1";
+			my @extra = ();
+			push(@extra, "-p", $port) if defined $port;
+			push(@extra, defined($user) ? "$user@$host" : $host);
+			my @ssh = ("ssh", @ssh_args, "-o", "BatchMode=yes", @extra, @list);
+			exec @ssh;
 		}
 
 		# should never get to next line
@@ -405,8 +428,9 @@ sub gsh_catch {
 	else {
 		# which machine finished?
 		$host = $pidlist{$pid};
-		print "\n#$type $pid $host\n" if ($opt_debug);
-		$output{$host} .= "$cmd\n" if ($opt_show_command);
+		print "\n#$type $pid $host\n" if $opt_debug;
+		$output{$host} .= "$host: " .join(' ', @cmd) . "\n"
+			if $opt_show_command;
 		# make a unique filehandle name: handler needs to be reentrant
 		my $READ = undef; #time . "$pid";
 		if (!open($READ,"<$TMP/gsh.$pid")) {
