@@ -51,6 +51,10 @@ to produce composite groups.  For example:
 
 The gsh(1) command can be used to run remote SSH connections to hosts.
 
+You can use the B<GSH_HOSTS> environment variable to supply the default
+location of the ghosts file, but B<-g> with always supersede it.
+If unset, the default value is C</etc/ghosts>.
+
 =head1 OPTIONS
 
 =over 8
@@ -73,30 +77,44 @@ use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
 
 our $opt_help = 0;
-our $opt_ghosts = "";
+our $opt_ghosts = $ENV{GSH_HOSTS};
  
-GetOptions("help|h",
-           "ghosts|g=s") or pod2usage(-verbose => 0, -exitstatus => 1);
+GetOptions(
+	"help|h",
+	"ghosts|g=s"
+) or pod2usage(-verbose => 0, -exitstatus => 1);
 
-pod2usage(-verbose => 2, -exitstatus => 0) if ($opt_help);
-
-pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
+pod2usage(-verbose => 2, -exitstatus => 0) if $opt_help;
+pod2usage(-verbose => 0, -exitstatus => 1) if $#ARGV < 0;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
-my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
+my @BACKBONES = SystemManagement::Ghosts::Expanded(@ARGV);
 
 if (scalar @BACKBONES == 0) {
-  print "Error: no hosts found\n";
-  exit 3;
+	print "Error: no hosts found\n";
+	exit 3;
 } else {
-  # prints which machines match the argument list
-  print join(" ",@BACKBONES),"\n";
+	# prints which machines match the argument list
+	print join(" ",@BACKBONES),"\n";
 }
 
 =head1 PREREQUISITES
 
 C<POSIX>
 C<SystemManagement::Ghosts>
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variable is used:
+
+=over 8
+
+=item B<GSH_HOSTS>
+
+This variable, when set, is used to set the default path of the C<ghosts>
+file.  It will be ignored when the B<-g> switch is used.
+
+=back
 
 =head1 BUGS
 
@@ -110,9 +128,11 @@ I bet.
 
 perl(1), gsh(1), SystemManagement::Ghosts(1)
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Kees Cook E<lt>kees@outflux.netE<gt>
+
+Raphael Manfredi E<lt><Raphael_Manfredi@pobox.comE<gt>
 
 L<http://www.outflux.net/|http://www.outflux.net/>
 
@@ -134,3 +154,5 @@ of the License, or (at your option) any later version.
 Revision: $Revision $
 
 =cut
+
+# vi: set ts=4 sw=4:

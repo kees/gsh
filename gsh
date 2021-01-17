@@ -33,18 +33,24 @@ The idea behind this tool originally came from wanting to do something
 on each machine in our network.  Existing scripts would serially go to
 each machine run the command, wait for it to finish, and continue to the
 next machine.  There was no reason why this couldn't be done in parallel.
+
 The problems, however, were many.  First of all, the output from finishing
 parallel jobs needs to be buffered in such a way that different machines
-wouldn't output their results on top of eachother.  A final bit was added
-because it was nice to have output alphabetical rather than first-done,
-first-seen.  The result is a parallel job spawner that displays output
-from the machines alphabetically, as soon as it is available.  If "alpha"
-take longer than "zebra", there will be no output past "alpha" until it
-is finished.  As soon as "alpha" is finished, though, everyone's output
-is printed.
+wouldn't output their results on top of eachother.
+
+A final bit was added because it was nice to have output alphabetical
+rather than first-done, first-seen.  The result is a parallel job
+spawner that displays output from the machines alphabetically, as soon
+as it is available.  If "alpha" take longer than "zebra", there will
+be no output past "alpha" until it is finished.  As soon as "alpha"
+is finished, though, everyone's output is printed.
 
 Sending a SIGUSR1 to gsh(1) will cause it to report which machines are
-still pending.  (Effectively turns on --debug for one cycle.)
+still pending.  (Effectively turns on B<--debug> for one cycle.)
+
+You can use the B<GSH_HOSTS> environment variable to supply the default
+location of the ghosts file, but B<-g> with always supersede it.
+If unset, the default value is C</etc/ghosts>.
 
 =cut
 
@@ -176,7 +182,7 @@ our $opt_alive = 0;
 our $opt_banner = 0;
 our $opt_copy_to = "";
 our $opt_debug = 0;
-our $opt_ghosts = "";
+our $opt_ghosts = $ENV{GSH_HOSTS};
 our $opt_immediate = 0;
 our $opt_no_host_prefix = 0;
 our $opt_show_command = 0;
@@ -612,9 +618,26 @@ C<POSIX>
 C<File::Temp>
 C<SystemManagement::Ghosts>
 
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variable is used:
+
+=over 8
+
+=item B<GSH_HOSTS>
+
+This variable, when set, is used to set the default path of the C<ghosts>
+file.  It will be ignored when the B<-g> switch is used.
+
+=back
+
 =head1 BUGS
 
-I bet.
+We bet.
+
+=head1 FILES
+
+/etc/ghosts
 
 =head1 SEE ALSO
 
