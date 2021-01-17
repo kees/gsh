@@ -70,7 +70,11 @@ use Pod::Usage;
 
 =item B<-h>, B<--help>
 
-Displays this help.
+Displays this detailed help.
+
+=item B<-H>, B<--manpage>
+
+Displays the complete manual page (prettier if C<perldoc> is installed).
 
 =item B<-b>, B<--banner>
 
@@ -145,6 +149,7 @@ Displays the version information and exits.
 =cut
 
 our $opt_help = 0;
+our $opt_manpage = 0;
 our $opt_banner = 0;
 our $opt_debug = 0;
 our $opt_ghosts = "";
@@ -160,6 +165,7 @@ our $opt_version = 0;
 
 GetOptions(
 	"help|h",
+	"manpage|H",
 	"banner|b",
 	"debug|d",
 	"ghosts|g=s",
@@ -174,6 +180,8 @@ GetOptions(
 	"version|V",
 )
 or pod2usage(-verbose => 0, -exitstatus => 1);
+
+pod2usage(-verbose => 2, -exitstatus => 0) if $opt_manpage;
 
 if ($opt_help) {
 	my $out = \*STDOUT;
@@ -535,6 +543,7 @@ L<http://www.outflux.net/|http://www.outflux.net/>
 =head1 COPYRIGHT
 
 Copyright (C) 1998-2014 Kees Cook <kees@outflux.net>
+
 Copyright (C) 2021 Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 Supposedly based on original code distributed with Perl Distribution.
