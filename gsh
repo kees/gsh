@@ -265,7 +265,7 @@ foreach my $ghost (@BACKBONES) {
 	undef $user if $opt_force_user;
 
 	# clear this machine's output buffer
-	$output{$host}="";
+	$output{$host} = "";
 
 	# make a column header for this machine if needed
 	$showlist{$host} = $opt_no_host_prefix ? "" : "$host: ";
@@ -384,7 +384,7 @@ while (defined($togo)) {
 			print STDERR "\n";
 		}
 		# if we catch something greater than 0, call SIGCHLD directly
-		if ((my $pid = waitpid(-1,&WNOHANG))>0) {
+		if ((my $pid = waitpid(-1, &WNOHANG)) > 0) {
 			gsh_catch('', $pid);
 		}
 	}
