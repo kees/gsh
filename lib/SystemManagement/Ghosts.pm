@@ -4,7 +4,10 @@ use warnings;
 use strict;
 
 my $GHOSTS_PATH = "/etc/ghosts";
-my @GHOSTS;    # all the lines of the ghosts file
+my @GHOSTS;		# all the lines of the ghosts file
+my %TAGS;		# macros and tags
+my %MACROS;		# macro definitions
+my %HOSTS;		# known hosts
 
 my $me = $0;
 $me =~ s|.*/(.*)|$1|;
@@ -66,10 +69,17 @@ sub ParseGhosts {
 #	warn "ParseGhosts[$depth]: expanding '$one_of_these'\n";
 	my @repl;
 	Load() if ($#GHOSTS < 0);
+	my %warned;
 	foreach my $line (@GHOSTS) {            # for each line of ghosts
 		if ($line =~ /^(\w+)\s*=\s*(.+)/) { # a macro line?
 			my $name = $1;
 			my $repl = $2;
+			if (0 == $depth) {
+				warn "$me: '$name' macro redefined\n"
+					if (exists($MACROS{$name}) && !$warned{"M:$name"}++);
+				$TAGS{$name}++;
+				$MACROS{$name} = $repl;
+			}
 			$repl =~ s/\s*\+\s*/:/g;	# make an addition
 			$repl =~ s/\s*\^\s*/:^/g;	# subtract
 			# do expansion in "wanted" list
@@ -100,6 +110,29 @@ sub ParseGhosts {
 			my $ghost = SystemManagement::Ghosts->make($attr[0]);
 			my $host = $attr[0] = $ghost->host;
 
+			if (0 == $depth) {
+				# Ensure host is not already a known tag
+				if (exists($TAGS{$host}) && !$warned{"L:$host"}++) {
+					warn sprintf("$me: host '$host' is also a listed %s\n",
+						exists($MACROS{$host}) ? "macro" : "tag");
+				}
+				# Ensure host is not redefined
+				warn "$me: host '$host' redefined\n"
+					if (exists($HOSTS{$host}) && !$warned{"R:$host"}++);
+				$HOSTS{$host}++;
+
+				# Record all the tags
+				my %seen;
+				for (my $i = 1; $i < @attr; $i++) {
+					my $tag = $attr[$i];
+					warn "$me: tag '$tag' for host '$host' is also a macro\n"
+						if (exists($MACROS{$tag}) && !$warned{"T:$host:$tag"}++);
+					warn "$me: multiple tag '$tag' for host '$host'\n"
+						if ($seen{$tag}++ && !$warned{"D:$host:$tag"}++);
+					$TAGS{$tag}++;
+				}
+			}
+
 			my $wanted = 0;
 			foreach my $attr (@attr) { # iterate over attribute array
 				if (index(lc($one_of_these),":$attr:") >= 0) {
@@ -126,6 +159,47 @@ sub Expanded {
 sub Objects {
 	my (@type) = @_;
 	return ParseGhosts(0, @type);
+}
+
+# Returns the known macros
+sub Macros {
+	my @list;
+	foreach my $key (sort keys %MACROS) {
+		my $value = $MACROS{$key};
+		# Beautify by making operators stand out
+		$value =~ s/(\S)([\+^])/$1 $2/g;
+		$value =~ s/([\+^])(\S)/$1 $2/g;
+		push(@list, "$key = $value");
+	}
+	return @list;
+}
+
+# Returns the known tags that can be used to select hosts
+sub Tags {
+	return sort keys %TAGS;
+}
+
+# Returns the known hosts
+sub Hosts {
+	return sort keys %HOSTS;
+}
+
+# Returns list of array reference, each entry containing:
+# [ tag, "macro" or "tag", count]
+sub TagArray {
+	my @list;
+	foreach my $tag (sort keys %TAGS) {
+		my $type = "tag";
+		my $count = $TAGS{$tag};
+		if (exists $MACROS{$tag}) {
+			$type = "macro";
+			# Use depth=1 to avoid re-counting and subsequent warnings
+			my @hosts = ParseGhosts(1, $tag);
+			$count = @hosts;
+		}
+		push(@list, [$tag, $type, $count]);
+	}
+	return @list;
 }
 
 1;

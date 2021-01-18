@@ -13,7 +13,11 @@ ghosts [OPTIONS] SYSTEMS
  -h, --help            Display full help
  -H, --manpage         Display full man page
  -1, --list            List each matching host on a line by itself
+ -e, --entries         List defined host entries
  -g, --ghosts          Use specified ghosts configuration file
+ -m, --macros          List defined macros
+ -t, --tags            List all selection tags (including macros)
+ -T, --tag-count       List all selection tags with amount of hosts
 
 =head1 DESCRIPTION
 
@@ -76,10 +80,28 @@ not the letter "ell".
 
 This allows easy output post-processing with C<sort>, C<grep>, etc.
 
+=item B<-e>, B<--entries>
+
+List all the defined hosts.  Use B<-1> to get them listed on distinct lines.
+
 =item B<-g>, B<--ghosts> CONFIG_FILE
 
 Uses the provided ghosts configuration file, instead of C</etc/ghosts>. This
 means C</etc/ghosts> will not be read at all.
+
+=item B<-m>, B<--macros>
+
+List all the defined macros, one macro per line.
+
+=item B<-t>, B<--tags>
+
+List all the defined tags, which includes macros.
+Use B<-1> to get them listed on distinct lines.
+
+=item B<-T>, B<--tag-count>
+
+List all the defined tags and macros, along with the amount of hosts each
+one selects.
 
 =back
 
@@ -95,13 +117,21 @@ $me =~ s|.*/(.*)|$1|;
 our $opt_help = 0;
 our $opt_manpage = 0;
 our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
+our $opt_entries = 0;
+our $opt_tags = 0;
+our $opt_tag_count = 0;
+our $opt_macros = 0;
 our $opt_list = 0;
  
 GetOptions(
 	"help|h",
 	"manpage|H",
+	"list|1",
 	"ghosts|g=s",
-	"list|1"
+	"macros|m",
+	"tags|t",
+	"tag-count|T",
+	"entries|e",
 ) or pod2usage(-verbose => 0, -exitstatus => 1);
 
 pod2usage(-verbose => 2, -exitstatus => 0) if $opt_manpage;
@@ -115,10 +145,56 @@ if ($opt_help) {
 	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
 }
 
-pod2usage(-verbose => 0, -exitstatus => 1) unless @ARGV;
-
 SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Expanded(@ARGV);
+
+if ($opt_macros) {
+	foreach my $macro (SystemManagement::Ghosts::Macros()) {
+		print "$macro\n";
+	}
+	exit 0;
+}
+
+if ($opt_tags) {
+	my @tags = SystemManagement::Ghosts::Tags();
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @tags), "\n" if @tags;
+	exit 0;
+}
+
+if ($opt_entries) {
+	my @hosts = SystemManagement::Ghosts::Hosts();
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @hosts), "\n" if @hosts;
+	exit 0;
+}
+
+sub minlen {
+	my ($val, $str) = @_;
+	my $len = length $str;
+	return $val >= $len ? $val : $len;
+}
+
+sub max (@) { (sort { $b <=> $a } @_)[0] }
+
+if ($opt_tag_count) {
+	my @tags = SystemManagement::Ghosts::TagArray();
+	my $tlen = max map { length $_->[0] } @tags;
+	my $mlen = max map { length $_->[1] } @tags;
+	my ($TAG, $TYPE, $COUNT) = qw(Name Type Hosts);
+	$tlen = minlen($tlen, $TAG);
+	$mlen = minlen($mlen, $TYPE);
+	my $fmt = "%${tlen}s  %-${mlen}s  %s\n";
+	printf $fmt, $TAG, $TYPE, $COUNT;
+	foreach my $e (@tags) {
+		printf $fmt, @{$e}[0,1,2];
+	}
+	exit 0;
+}
+
+# From here on, we need at least one argument
+
+pod2usage(-verbose => 0, -exitstatus => 1) unless @ARGV;
 
 if (scalar @BACKBONES == 0) {
 	die "$me  no matching hosts found in $opt_ghosts\n";
