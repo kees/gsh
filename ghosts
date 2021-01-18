@@ -8,7 +8,7 @@ B<ghosts> - provides a wrapper for the routines in SystemManagement::Ghosts
 
 ghosts [OPTIONS] [SYSTEMS]
 
- SYSTEMS is a combination of ghost macros.  See --help for more details.
+ SYSTEMS is a combination of ghost macros.  Use --manpage for more details.
 
  -h, --help            Display full help
  -H, --manpage         Display full man page
