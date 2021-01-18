@@ -54,26 +54,6 @@ You can use the B<GSH_HOSTS> environment variable to supply the default
 location of the ghosts file, but B<-g> with always supersede it.
 If unset, the default value is C</etc/ghosts>.
 
-=cut
-
-# Thanks to:
-#	- whoever originally gave this idea to: Mike Murphy
-#	- Mike Murphy for actually implementing this at Motorola
-#	- Paul Holcomb for various fixes
-#	- Nick Asvos for finding an out-of-memory bug and reporting it
-
-use strict;
-use warnings;
-
-our $NAME = "gsh";
-our $VERSION = "1.2.0";
-
-use SystemManagement::Ghosts;
-use POSIX "sys_wait_h";
-use File::Temp qw/ tempdir /;
-use Getopt::Long qw(:config no_ignore_case bundling require_order);
-use Pod::Usage;
-
 =head1 OPTIONS
 
 =over 8
@@ -183,6 +163,24 @@ Displays the version information and exits.
 =back
 
 =cut
+
+# Thanks to:
+#	- whoever originally gave this idea to: Mike Murphy
+#	- Mike Murphy for actually implementing this at Motorola
+#	- Paul Holcomb for various fixes
+#	- Nick Asvos for finding an out-of-memory bug and reporting it
+
+use strict;
+use warnings;
+
+our $NAME = "gsh";
+our $VERSION = "1.2.0";
+
+use SystemManagement::Ghosts;
+use POSIX "sys_wait_h";
+use File::Temp qw/ tempdir /;
+use Getopt::Long qw(:config no_ignore_case bundling require_order);
+use Pod::Usage;
 
 our $opt_help = 0;
 our $opt_manpage = 0;
