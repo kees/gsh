@@ -27,33 +27,41 @@ host's membership in a given group.  In the example below, there are two
 machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
 "e450" group, etc:
 
-        # Blank lines are ignored, so are #-commented ones
-        # Macros
-        sunprod = solaris ^ e450
+	# Blank lines are ignored, so are #-commented ones
+	# Macros
+	sunprod = solaris ^ e450
 
-        # Machines
-        # Name          Group           Hardware        OS
-        bilbo           prod            intel           linux
-        baggins         prod            e4500           solaris
-        tolkien         devel           e450            solaris
+	# Machines
+	# The first column is always interpreted as the host name
+	# Other columns add additional tags to each host
+	# Name          Group           Hardware        OS
+	bilbo           prod            intel           linux
+	baggins         prod            e4500           solaris
+	tolkien         devel           e450            solaris
 
-        # If you use another SSH port, you can specify it
-        # Note that there is no need define all the columns!
-        frodo:2222      mordor
+	# If you use another SSH port, you can specify it
+	# Note that there is no need define all the columns!
+	frodo:2222      mordor
 
-        # You can also specify a different user to connect to
-        # That will supersede any '-l' you supply
-        # And you can have user + port if needed
-        me@gandalf          mordor
-        me@legolas:2333     mordor
+	# You can also specify a different user to connect to
+	# That will supersede any '-l' you supply to gsh
+	# And you can have user + port if needed
+	me@gandalf          mordor
+	me@legolas:2333     mordor
 
 Machine groups can be combined logically with the "+" and "^" characters
-to produce composite groups.  For example:
+to produce composite groups. The "+" operator merges entries and the "^"
+operator removes matching hosts.
 
-        $ ghosts intel+e450
-        bilbo tolkien
-        $ ghosts prod^intel
-        baggins
+For example:
+
+	$ ghosts intel+e450
+	bilbo tolkien
+	$ ghosts prod^intel
+	baggins
+
+Use C<ghosts -T> to get a summary of all the defined tags and macros, along
+with the amount of hosts they are selecting.
 
 The gsh(1) command can be used to run remote SSH connections to hosts.
 
