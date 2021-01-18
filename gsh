@@ -51,7 +51,7 @@ Sending a SIGUSR1 to gsh(1) will cause it to report which machines are
 still pending.  (Effectively turns on B<--debug> for one cycle.)
 
 You can use the B<GSH_HOSTS> environment variable to supply the default
-location of the ghosts file, but B<-g> with always supersede it.
+location of the ghosts file, but B<-g> will always supersede it.
 If unset, the default value is C</etc/ghosts>.
 
 =head1 OPTIONS
