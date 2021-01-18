@@ -658,7 +658,7 @@ We bet.
 
 =head1 SEE ALSO
 
-perl(1), ghosts(1), ssh(1), SystemManagement::Ghosts(1)
+perl(1), ghosts(1), ssh(1).
 
 =head1 AUTHORS
 

@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-B<ghosts> - provides a wrapper for the routines in SystemManagement::Ghosts
+B<ghosts> - provides queries to a gsh hosts ("ghosts") file
 
 =head1 SYNOPSIS
 
@@ -21,11 +21,14 @@ ghosts [OPTIONS] [SYSTEMS]
 
 =head1 DESCRIPTION
 
-Parses the /etc/ghosts file for matching hosts.  The first word of each
+Parses the C</etc/ghosts> file for matching hosts.  The first word of each
 line is the "hostname", and each other word on the line represents that
-host's membership in a given group.  In the example below, there are two
-machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
-"e450" group, etc:
+host's membership in a given group, which we call B<tags>.
+
+In the example below, there are two machines ("bilbo", "baggins") in the
+"prod" group, one ("tolkien") in the "e450" group, etc., and the "sunprod"
+expression defines a set of machines that is built on top of existing host
+tags, which we call a B<macro>.
 
 	# Blank lines are ignored, so are #-commented ones
 	# Macros
@@ -49,21 +52,32 @@ machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
 	me@gandalf          mordor
 	me@legolas:2333     mordor
 
-Machine groups can be combined logically with the "+" and "^" characters
-to produce composite groups. The "+" operator merges entries and the "^"
-operator removes matching hosts.
+Machine B<tags> and host names can be combined logically with the "+"
+and "^" characters to produce composite groups. The "+" operator merges
+entries and the "^" operator removes matching hosts.
+
+This syntax can be used on the command line (to both C<ghosts> for
+testing and C<gsh> for running), or also used in the C</etc/ghosts>
+file, as a macro value (after the C<=> sign).
 
 For example:
 
 	$ ghosts intel+e450
 	bilbo tolkien
+
 	$ ghosts prod^intel
 	baggins
 
-Use C<ghosts -T> to get a summary of all the defined tags and macros, along
-with the amount of hosts they are selecting.
+	$ ghosts sunprod
+	baggins
 
-The gsh(1) command can be used to run remote SSH connections to hosts.
+Use C<ghosts -T> to get a summary of all the defined tags and macros, along
+with the amount of hosts they are selecting (hosts are excluded from this
+report, but they can be listed via C<ghosts -e1> for instance).
+
+The gsh(1) command can be used to run remote SSH connections to hosts defined
+by host name or by a combination of host and tags / macros, as demonstrated
+above.
 
 You can use the B<GSH_HOSTS> environment variable to supply the default
 location of the ghosts file, but B<-g> will always supersede it.
@@ -240,7 +254,7 @@ I bet.
 
 =head1 SEE ALSO
 
-perl(1), gsh(1), SystemManagement::Ghosts(1)
+perl(1), gsh(1).
 
 =head1 AUTHORS
 
