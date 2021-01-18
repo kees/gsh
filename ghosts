@@ -11,8 +11,9 @@ ghosts [OPTIONS] SYSTEMS
  SYSTEMS is a combination of ghost macros.  See --help for more details.
 
  -h, --help            Display full help
- -g, --ghosts          Use specified ghosts configuration file
+ -H, --manpage         Display full man page
  -1, --list            List each matching host on a line by itself
+ -g, --ghosts          Use specified ghosts configuration file
 
 =head1 DESCRIPTION
 
@@ -62,12 +63,11 @@ If unset, the default value is C</etc/ghosts>.
 
 =item B<-h>, B<--help>
 
-Displays this full help.
+Displays usage help.
 
-=item B<-g>, B<--ghosts> CONFIG_FILE
+=item B<-H>, B<--manpage>
 
-Uses the provided ghosts configuration file, instead of C</etc/ghosts>. This
-means C</etc/ghosts> will not be read at all.
+Displays the complete manual page (prettier if C<perldoc> is installed).
 
 =item B<-1>, B<--list>
 
@@ -75,6 +75,11 @@ Lists hosts on a one-per-line basis.  The short option is the digit B<1> (one),
 not the letter "ell".
 
 This allows easy output post-processing with C<sort>, C<grep>, etc.
+
+=item B<-g>, B<--ghosts> CONFIG_FILE
+
+Uses the provided ghosts configuration file, instead of C</etc/ghosts>. This
+means C</etc/ghosts> will not be read at all.
 
 =back
 
@@ -88,16 +93,28 @@ my $me = $0;
 $me =~ s|.*/(.*)|$1|;
 
 our $opt_help = 0;
+our $opt_manpage = 0;
 our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
 our $opt_list = 0;
  
 GetOptions(
 	"help|h",
+	"manpage|H",
 	"ghosts|g=s",
 	"list|1"
 ) or pod2usage(-verbose => 0, -exitstatus => 1);
 
-pod2usage(-verbose => 2, -exitstatus => 0) if $opt_help;
+pod2usage(-verbose => 2, -exitstatus => 0) if $opt_manpage;
+
+if ($opt_help) {
+	my $out = \*STDOUT;
+	if (-t STDOUT) {
+		my $pager = $ENV{PAGER} || "more";
+		$out = \*PAGER if open(PAGER, "| $pager");
+	}
+	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
+}
+
 pod2usage(-verbose => 0, -exitstatus => 1) unless @ARGV;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
