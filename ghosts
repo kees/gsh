@@ -6,7 +6,7 @@ B<ghosts> - provides a wrapper for the routines in SystemManagement::Ghosts
 
 =head1 SYNOPSIS
 
-ghosts [OPTIONS] SYSTEMS
+ghosts [OPTIONS] [SYSTEMS]
 
  SYSTEMS is a combination of ghost macros.  See --help for more details.
 
