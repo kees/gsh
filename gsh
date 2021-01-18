@@ -20,7 +20,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -i, --immediate       Show output when ready, do not wait to sort by host
  -l, --user USER       SSH's to the host as user USER
  -n, --open-stdin      Leaves stdin open when running (scary!)
- -o, --self-remote     Run locally instead of over SSH for local host
+ -o, --self-remote     Run command over SSH even for local host
  -p, --no-host-prefix  Does not prefix output lines with the host name
  -r, --run-locally     Run commands locally (replaces some $var for you)
  -s, --show-commands   Displays the command before the output report
