@@ -22,7 +22,6 @@ sub make {
 	return $self;
 }
 
-
 sub user { $_[0]->{user} }
 sub port { $_[0]->{port} }
 sub host { $_[0]->{host} }
@@ -31,6 +30,7 @@ sub host { $_[0]->{host} }
 sub Load {
 	my ($file) = @_;
 	$file = $GHOSTS_PATH if (!defined($file) || $file eq "");
+	$GHOSTS_PATH = $file;		# The file we're loading becomes the default
 	open(GHOSTS_FILE, "<${file}") ||
 		die "$me: cannot open host file \"${file}\": $!\n";
 	local $_;
