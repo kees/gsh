@@ -28,6 +28,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -C, --copy DIR        Copies specified files to remote DIR on each host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
+ -X, --extra-ssh       Supply extra arguments to ssh
 
 =head1 DESCRIPTION
 
@@ -160,6 +161,28 @@ configuration specified in the ghosts file.  See also B<-l>.
 
 Displays the version information and exits.
 
+=item B<-X>, B<--extra-ssh>
+
+Supplies extra arguments to the B<ssh> command being run, which can be used
+to configure port forwarding.
+
+For instance:
+
+	gsh -X '-R 2222:githost.example.com:22'
+
+could be used on hosts where we wish to synchronize a git repository held
+on the githost.example.com machine, which would be normally not accessible
+by the remote host.  It would then be able to define its repository as:
+
+	ssh://localhost:2222/path/to/repository.git
+
+thereby allowing synchronization operations through the forwarded port.
+
+Note that the B<-X> argument is a quoted string, so that it is read as one
+big value, but it will be internally split on white spaces to create the
+extra arguments for B<ssh>, making quotation of spaces within that argument
+impossible.
+
 =back
 
 =cut
@@ -199,6 +222,7 @@ our $opt_force_user = 0;
 our $opt_run_locally = 0;
 our $opt_self_remote = 0;
 our $opt_version = 0;
+our $opt_extra_ssh = "";
 
 GetOptions(
 	"help|h",
@@ -218,6 +242,7 @@ GetOptions(
 	"copy-to|C=s",
 	"force-user|L=s",
 	"version|V",
+	"extra-ssh|X=s",
 )
 or pod2usage(-verbose => 0, -exitstatus => 1);
 
@@ -294,6 +319,7 @@ if ($opt_copy_to) {
 	# SSH arguments
 	push(@ssh_args, "-n") if $opt_open_stdin;
 	push(@ssh_args, "-l", $remote_user) if $remote_user;
+	push(@ssh_args, split(/\s/, $opt_extra_ssh)) if length $opt_extra_ssh;
 }
 
 if ($opt_tabulate) {
