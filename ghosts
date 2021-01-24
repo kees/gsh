@@ -132,6 +132,7 @@ one selects.
 use SystemManagement::Ghosts;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
+use List::Util qw(max);
 
 my $me = $0;
 $me =~ s|.*/(.*)|$1|;
@@ -196,8 +197,6 @@ sub minlen {
 	my $len = length $str;
 	return $val >= $len ? $val : $len;
 }
-
-sub max (@) { (sort { $b <=> $a } @_)[0] }
 
 if ($opt_tag_count) {
 	my @tags = SystemManagement::Ghosts::TagArray();

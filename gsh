@@ -204,6 +204,7 @@ use POSIX "sys_wait_h";
 use File::Temp qw/ tempdir /;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
+use List::Util qw(max);
 
 our $opt_help = 0;
 our $opt_manpage = 0;
@@ -324,8 +325,7 @@ if ($opt_copy_to) {
 
 if ($opt_tabulate) {
 	# Compute max host name length
-	$opt_tabulate =
-		(sort { $b <=> $a } map { length($_->host) } @BACKBONES)[0];
+	$opt_tabulate = max map { length($_->host) } @BACKBONES;
 }
 
 # for each machine that matched the ghosts systype do the following:
