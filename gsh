@@ -273,8 +273,8 @@ die "$me  no matching hosts found in $opt_ghosts\n" unless @BACKBONES;
 
 my $TMP = tempdir( CLEANUP => 1 );
 
-my $showpid=undef;	# shows PIDs
-my $signals=undef;	# uses the child signal handler
+my $showpid = undef;	# shows PIDs
+my $signals = undef;	# uses the child signal handler
 
 $| = 1;
 
@@ -282,7 +282,7 @@ $| = 1;
 my %output;
 my %pidlist;
 my %showlist; # report header, per host
-my $viewwaiting=0; # Should we report who we're waiting for?
+my $viewwaiting = 0; # Should we report who we're waiting for?
 
 # set up signal handlers: we must die gracefully and attempt to kill children
 $SIG{'QUIT'} = 'quit';			# install signal handler for SIGQUIT
@@ -327,16 +327,29 @@ if ($opt_tabulate) {
 	# Compute max host name length
 	$opt_tabulate = max map { length($_->host) } @BACKBONES;
 }
+#
+# Progress counters
+my ($contacted, $replying, $skipped, $completed, $errored) = (0, 0, 0, 0, 0);
+my @errored;
+my @skipped;
+my $hosts = @BACKBONES;		# Number of selected hosts
+my $running_on_tty = -t STDIN && -t STDOUT;
+our $last_length = 0;
+our $last_state = "";
 
-# for each machine that matched the ghosts systype do the following:
+# Loop on each selected host
 foreach my $ghost (@BACKBONES) {
 	my $host = $ghost->host;
 	my $port = $ghost->port;
 	my $user = $ghost->user;
 
+	tty_progress();
+
 	# Check whether host is alive when --alive was given
 	if ($opt_alive && !is_alive($host, $opt_alive)) {
 		warn "$me: skipping non-responsive host '$host'\n";
+		push(@skipped, $host);
+		$skipped++;
 		next;
 	}
 
@@ -477,6 +490,7 @@ while (defined($togo)) {
 	if ($cycles >= ($signals ? 5 : 0)) {
 		if ($viewwaiting || $opt_debug) {
 			$viewwaiting = 0;
+			tty_progress_clear();
 			print STDERR "Waiting on: ";
 			foreach (keys %pidlist) {
 				print STDERR "$pidlist{$_} ";
@@ -490,22 +504,29 @@ while (defined($togo)) {
 	}
 
 	show_output(!$opt_immediate);
+	tty_progress();
 
 	# wait for a half second
 	select(undef,undef,undef,0.5) if ($opt_debug);
+	#
 	# see which processes are left
 	@left = keys %pidlist;
 	# update the "how many are left?" counters
-	if (@left) {
-		$togo = $#left;
-	}
-	else {
-		undef $togo;
+	undef $togo;
+	$togo = $#left if @left;
+
+	$replying = $completed;
+	foreach my $pid (@left) {
+		$replying ++ if -s "$TMP/gsh.$pid";
 	}
 }
 
 # handle any other output that hadn't been printed yet
 show_output(0);
+tty_progress_clear();
+
+report_error("skipped %d host%s", \@skipped);
+report_error("error reported for %d host%s", \@errored);
 
 #print "skipped machines: $forked\n";
 #@tried=split(/\s+/,$forked);
@@ -520,6 +541,47 @@ exit(0);
 
 # subroutines
 
+# Clear previous tty progress by overwriting a blank line.
+sub tty_progress_clear {
+	return unless $running_on_tty;
+	print STDOUT "\r", " " x length($last_state), "\r";
+	$last_state = "";
+}
+
+# Show progress if running on a tty
+sub tty_progress {
+	return unless $running_on_tty;
+	my $msg = "[hosts=$hosts done=$completed reply=$replying";
+	$msg .= " skip=$skipped" if $skipped;
+	$msg .= " error=$errored" if $errored;
+	$msg .= "]";
+	return if $msg eq $last_state;
+	$last_state = $msg;
+	print STDOUT "\r";
+	my $len = length $msg;
+	$msg .= ' ' x ($last_length - $len) if $len < $last_length;
+	$last_length = $len;
+	print STDOUT $msg;
+}
+
+sub report_error {
+	my ($fmt, $aref) = @_;
+	return unless @$aref;
+	my $cnt = @$aref;
+	my $list = join(', ', @$aref);
+	my $msg = "$me: " . sprintf($fmt, $cnt, $cnt > 1 ? "s" : "");
+	if (length($msg) + length($list) < 77) {
+		warn "$msg ($list)\n";
+	} else {
+		warn "$msg:\n";
+		warn "$me: " . (' ' x 3) . $list . "\n";
+	}
+};
+
+warn sprintf("$me: error reported for $errored host%s\n", $errored > 1 ? "s" : "")
+	if $errored;
+
+
 sub show_output {
 	my ($waiting) = @_;
 	# This loop checks to see if there is any output waiting to be
@@ -529,8 +591,10 @@ sub show_output {
 	# A lone "." means that a machine finished without any output.
 	foreach my $key (sort keys %output) {
 		if ($output{$key} ne "") {
+			tty_progress_clear();
 			print $output{$key} unless $output{$key} eq ".";
 			delete $output{$key};
+			$completed++;
 		}
 		elsif ($waiting) {
 			last;
@@ -574,8 +638,11 @@ sub grab_output {
 	$output{$host} .= banner($host) if $opt_banner;
 	$output{$host} .= $showlist{$host} . join(' ', @cmd) . "\n"
 		if $opt_show_command;
-	$output{$host} .= $showlist{$host} . "*** exit code was $status ***\n"
-		if $status != 0;
+	if ($status != 0) {
+		$output{$host} .= $showlist{$host} . "*** exit code was $status ***\n";
+		$errored++;
+		push(@errored, $host);
+	}
 	# make a unique filehandle name: handler needs to be reentrant
 	my $READ = undef;		#time . "$pid";
 	if (!open($READ, "<$TMP/gsh.$pid")) {
@@ -625,7 +692,7 @@ sub gsh_catch {
 }
 
 sub ReportWaiting {
-	$viewwaiting=1;
+	$viewwaiting = 1;
 	# on bad systems, you may need to do this
 	#$SIG{'USR1'} = 'ReportWaiting';		# install USR1 handler
 }
