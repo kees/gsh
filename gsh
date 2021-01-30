@@ -225,6 +225,12 @@ our $opt_self_remote = 0;
 our $opt_version = 0;
 our $opt_extra_ssh = "";
 
+my $EXIT_OK = 0;
+my $EXIT_OPTIONS = 1;
+my $EXIT_NO_COMMAND = 2;
+my $EXIT_ERRORED = 3;
+my $EXIT_QUIT = 4;
+
 GetOptions(
 	"help|h",
 	"manpage|H",
@@ -245,9 +251,9 @@ GetOptions(
 	"version|V",
 	"extra-ssh|X=s",
 )
-or pod2usage(-verbose => 0, -exitstatus => 1);
+or pod2usage(-verbose => 0, -exitstatus => $EXIT_OPTIONS);
 
-pod2usage(-verbose => 2, -exitstatus => 0) if $opt_manpage;
+pod2usage(-verbose => 2, -exitstatus => $EXIT_OK) if $opt_manpage;
 
 if ($opt_help) {
 	my $out = \*STDOUT;
@@ -255,7 +261,7 @@ if ($opt_help) {
 		my $pager = $ENV{PAGER} || "more";
 		$out = \*PAGER if open(PAGER, "| $pager");
 	}
-	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
+	pod2usage(-verbose => 1, -exitstatus => $EXIT_OK, -output => $out)
 }
 
 Version() if $opt_version;
@@ -265,7 +271,7 @@ $me =~ s|.*/(.*)|$1|;
 my $systype = shift(@ARGV);		# get name representing set of hosts
 my @cmd = @ARGV;				# remaining args constitute the command
 
-pod2usage(-verbose => 0, -exitstatus => -1) unless @cmd;
+pod2usage(-verbose => 0, -exitstatus => $EXIT_NO_COMMAND) unless @cmd;
 
 SystemManagement::Ghosts::Load($opt_ghosts);
 my @BACKBONES = SystemManagement::Ghosts::Objects($systype);
@@ -535,7 +541,7 @@ report_error("error reported for %d host%s", \@errored);
 #	print "No report: $_\n";
 #}
 
-exit(0);
+exit($errored ? $EXIT_ERRORED : $EXIT_OK);
 
 
 
@@ -626,7 +632,7 @@ sub quit {
 		unlink("$TMP/gsh.$pid");
 	}
 	# kill self, but not with signal to allow /tmp cleanup
-	exit 1;
+	exit $EXIT_QUIT;
 }
 
 # Grap output from finished child within $output{$host}
@@ -719,13 +725,39 @@ modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 EOM
-    exit(0);
+    exit $EXIT_OK;
 }
 
 =head1 PREREQUISITES
 
 C<POSIX>
 C<File::Temp>
+
+=head1 EXIT VALUES
+
+=over 8
+
+=item B<0>
+
+Success
+
+=item B<1>
+
+Error in option parsing
+
+=item B<2>
+
+No command was specified
+
+=item B<3>
+
+An error occurred in one of the hosts
+
+=item B<4>
+
+The command was interrupted
+
+=back
 
 =head1 ENVIRONMENT VARIABLES
 
