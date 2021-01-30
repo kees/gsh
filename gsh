@@ -726,7 +726,6 @@ EOM
 
 C<POSIX>
 C<File::Temp>
-C<SystemManagement::Ghosts>
 
 =head1 ENVIRONMENT VARIABLES
 
