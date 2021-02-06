@@ -125,6 +125,16 @@ Use B<-1> to get them listed on distinct lines.
 List all the defined tags and macros, along with the amount of hosts each
 one selects.
 
+If tags or macro names were listed on the command line, only displays
+entries that matches them.  Regular expressions can be specified.
+For instance:
+
+	ghosts -T '^m'
+
+would only report on tags and macros starting with an C<m> letter.  When no
+arguments are specified, we match anything.  If several arguments are given,
+only entries matching one of the regular expressions are printed.
+
 =back
 
 =cut
@@ -200,6 +210,29 @@ sub minlen {
 
 if ($opt_tag_count) {
 	my @tags = SystemManagement::Ghosts::TagArray();
+	if (@ARGV) {
+		my @filters;
+		foreach my $re (@ARGV) {
+			push @filters, qr/$re/;
+		}
+		my @kept;
+		foreach my $e (@tags) {
+			my $match = 0;
+			foreach my $re (@filters) {
+				if ($e->[0] =~ $re) {
+					$match = 1;
+					last;
+				}
+			}
+			next unless $match;
+			push @kept, $e;
+		}
+		@tags = @kept;
+	}
+	unless (@tags) {
+		warn "$me: no entry matching specifications!\n";
+		exit 0;
+	}
 	my $tlen = max map { length $_->[0] } @tags;
 	my $mlen = max map { length $_->[1] } @tags;
 	my ($TAG, $TYPE, $COUNT) = qw(Name Type Hosts);
