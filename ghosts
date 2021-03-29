@@ -2,42 +2,86 @@
 
 =head1 NAME
 
-B<ghosts> - provides a wrapper for the routines in SystemManagement::Ghosts
+B<ghosts> - provides queries to a gsh hosts ("ghosts") file
 
 =head1 SYNOPSIS
 
-ghosts [OPTIONS] SYSTEMS
+ghosts [OPTIONS] [SYSTEMS]
 
- SYSTEMS is a combination of ghost macros.  See --help for more details.
+ SYSTEMS is a combination of ghost macros.  Use --manpage for more details.
 
  -h, --help            Display full help
+ -H, --manpage         Display full man page
+ -1, --list            List each matching host on a line by itself
+ -e, --entries         List defined host entries
+ -g, --ghosts          Use specified ghosts configuration file
+ -m, --macros          List defined macros
+ -t, --tags            List all selection tags (including macros)
+ -T, --tag-count       List all selection tags with amount of hosts
 
 =head1 DESCRIPTION
 
-Parses the /etc/ghosts file for matching hosts.  The first word of each
+Parses the C</etc/ghosts> file for matching hosts.  The first word of each
 line is the "hostname", and each other word on the line represents that
-host's membership in a given group.  In the example below, there are two
-machines ("bilbo", "baggins") in the "prod" group, one ("tolkien") in the
-"e450" group, etc:
+host's membership in a given group, which we call B<tags>.
 
-        # Macros
-        sunprod=solaris^e450
-        # Machines
-        #
-        # Name          Group           Hardware        OS
-        bilbo           prod            intel           linux
-        baggins         prod            e4500           solaris
-        tolkien         devel           e450            solaris
+In the example below, there are two machines ("bilbo", "baggins") in the
+"prod" group, one ("tolkien") in the "e450" group, etc., and the "sunprod"
+expression defines a set of machines that is built on top of existing host
+tags, which we call a B<macro>.
 
-Machine groups can be combined logically with the "+" and "^" characters
-to produce composite groups.  For example:
+	# Blank lines are ignored, so are #-commented ones
+	# Macros
+	sunprod = solaris ^ e450
 
-        $ ghosts intel+e450
-        bilbo tolkien
-        $ ghosts prod^intel
-        baggins
+	# Machines
+	# The first column is always interpreted as the host name
+	# Other columns add additional tags to each host
+	# Name          Group           Hardware        OS
+	bilbo           prod            intel           linux
+	baggins         prod            e4500           solaris
+	tolkien         devel           e450            solaris
 
-The gsh(1) command can be used to run remote SSH connections to hosts.
+	# If you use another SSH port, you can specify it
+	# Note that there is no need define all the columns!
+	frodo:2222      mordor
+
+	# You can also specify a different user to connect to
+	# That will supersede any '-l' you supply to gsh
+	# And you can have user + port if needed
+	me@gandalf          mordor
+	me@legolas:2333     mordor
+
+Machine B<tags> and host names can be combined logically with the "+"
+and "^" characters to produce composite groups. The "+" operator merges
+entries and the "^" operator removes matching hosts.
+
+This syntax can be used on the command line (to both C<ghosts> for
+testing and C<gsh> for running), or also used in the C</etc/ghosts>
+file, as a macro value (after the C<=> sign).
+
+For example:
+
+	$ ghosts intel+e450
+	bilbo tolkien
+
+	$ ghosts prod^intel
+	baggins
+
+	$ ghosts sunprod
+	baggins
+
+Use C<ghosts -T> to get a summary of all the defined tags and macros, along
+with the amount of hosts they are selecting (hosts are excluded from this
+report, but they can be listed via C<ghosts -e1> for instance).
+
+The gsh(1) command can be used to run remote SSH connections to hosts defined
+by host name or by a combination of host and tags / macros, as demonstrated
+above.
+
+You can use the B<GSH_HOSTS> environment variable to supply the default
+location of the ghosts file, but B<-g> will always supersede it.
+If unset, the default value is C</etc/ghosts>.
 
 =head1 OPTIONS
 
@@ -45,12 +89,51 @@ The gsh(1) command can be used to run remote SSH connections to hosts.
 
 =item B<-h>, B<--help>
 
-Displays this full help.
+Displays usage help.
+
+=item B<-H>, B<--manpage>
+
+Displays the complete manual page (prettier if C<perldoc> is installed).
+
+=item B<-1>, B<--list>
+
+Lists hosts on a one-per-line basis.  The short option is the digit B<1> (one),
+not the letter "ell".
+
+This allows easy output post-processing with C<sort>, C<grep>, etc.
+
+=item B<-e>, B<--entries>
+
+List all the defined hosts.  Use B<-1> to get them listed on distinct lines.
 
 =item B<-g>, B<--ghosts> CONFIG_FILE
 
-Uses the provided ghosts configuration file, instead of /etc/ghosts. This
-means /etc/ghosts will not be read at all.
+Uses the provided ghosts configuration file, instead of C</etc/ghosts>. This
+means C</etc/ghosts> will not be read at all.
+
+=item B<-m>, B<--macros>
+
+List all the defined macros, one macro per line.
+
+=item B<-t>, B<--tags>
+
+List all the defined tags, which includes macros.
+Use B<-1> to get them listed on distinct lines.
+
+=item B<-T>, B<--tag-count>
+
+List all the defined tags and macros, along with the amount of hosts each
+one selects.
+
+If tags or macro names were listed on the command line, only displays
+entries that matches them.  Regular expressions can be specified.
+For instance:
+
+	ghosts -T '^m'
+
+would only report on tags and macros starting with an C<m> letter.  When no
+arguments are specified, we match anything.  If several arguments are given,
+only entries matching one of the regular expressions are printed.
 
 =back
 
@@ -59,32 +142,139 @@ means /etc/ghosts will not be read at all.
 use SystemManagement::Ghosts;
 use Getopt::Long qw(:config no_ignore_case bundling require_order);
 use Pod::Usage;
+use List::Util qw(max);
+
+my $me = $0;
+$me =~ s|.*/(.*)|$1|;
 
 our $opt_help = 0;
-our $opt_ghosts = "";
+our $opt_manpage = 0;
+our $opt_ghosts = $ENV{GSH_HOSTS} || "/etc/ghosts";
+our $opt_entries = 0;
+our $opt_tags = 0;
+our $opt_tag_count = 0;
+our $opt_macros = 0;
+our $opt_list = 0;
  
-GetOptions("help|h",
-           "ghosts|g=s") or pod2usage(-verbose => 0, -exitstatus => 1);
+GetOptions(
+	"help|h",
+	"manpage|H",
+	"list|1",
+	"ghosts|g=s",
+	"macros|m",
+	"tags|t",
+	"tag-count|T",
+	"entries|e",
+) or pod2usage(-verbose => 0, -exitstatus => 1);
 
-pod2usage(-verbose => 2, -exitstatus => 0) if ($opt_help);
+pod2usage(-verbose => 2, -exitstatus => 0) if $opt_manpage;
 
-pod2usage(-verbose => 0, -exitstatus => 1) if ($#ARGV<0);
+if ($opt_help) {
+	my $out = \*STDOUT;
+	if (-t STDOUT) {
+		my $pager = $ENV{PAGER} || "more";
+		$out = \*PAGER if open(PAGER, "| $pager");
+	}
+	pod2usage(-verbose => 1, -exitstatus => 0, -output => $out)
+}
 
 SystemManagement::Ghosts::Load($opt_ghosts);
-my @BACKBONES=SystemManagement::Ghosts::Expanded(@ARGV);
+my @BACKBONES = SystemManagement::Ghosts::Expanded(@ARGV);
+
+if ($opt_macros) {
+	foreach my $macro (SystemManagement::Ghosts::Macros()) {
+		print "$macro\n";
+	}
+	exit 0;
+}
+
+if ($opt_tags) {
+	my @tags = SystemManagement::Ghosts::Tags();
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @tags), "\n" if @tags;
+	exit 0;
+}
+
+if ($opt_entries) {
+	my @hosts = SystemManagement::Ghosts::Hosts();
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @hosts), "\n" if @hosts;
+	exit 0;
+}
+
+sub minlen {
+	my ($val, $str) = @_;
+	my $len = length $str;
+	return $val >= $len ? $val : $len;
+}
+
+if ($opt_tag_count) {
+	my @tags = SystemManagement::Ghosts::TagArray();
+	if (@ARGV) {
+		my @filters;
+		foreach my $re (@ARGV) {
+			push @filters, qr/$re/;
+		}
+		my @kept;
+		foreach my $e (@tags) {
+			my $match = 0;
+			foreach my $re (@filters) {
+				if ($e->[0] =~ $re) {
+					$match = 1;
+					last;
+				}
+			}
+			next unless $match;
+			push @kept, $e;
+		}
+		@tags = @kept;
+	}
+	unless (@tags) {
+		warn "$me: no entry matching specifications!\n";
+		exit 0;
+	}
+	my $tlen = max map { length $_->[0] } @tags;
+	my $mlen = max map { length $_->[1] } @tags;
+	my ($TAG, $TYPE, $COUNT) = qw(Name Type Hosts);
+	$tlen = minlen($tlen, $TAG);
+	$mlen = minlen($mlen, $TYPE);
+	my $fmt = "%${tlen}s  %-${mlen}s  %s\n";
+	printf $fmt, $TAG, $TYPE, $COUNT;
+	foreach my $e (@tags) {
+		printf $fmt, @{$e}[0,1,2];
+	}
+	exit 0;
+}
+
+# From here on, we need at least one argument
+
+pod2usage(-verbose => 0, -exitstatus => 1) unless @ARGV;
 
 if (scalar @BACKBONES == 0) {
-  print "Error: no hosts found\n";
-  exit 3;
+	die "$me  no matching hosts found in $opt_ghosts\n";
 } else {
-  # prints which machines match the argument list
-  print join(" ",@BACKBONES),"\n";
+	# prints which machines match the argument list
+	my $sep = $opt_list ? "\n" : " ";
+	print join($sep, @BACKBONES), "\n";
 }
 
 =head1 PREREQUISITES
 
 C<POSIX>
 C<SystemManagement::Ghosts>
+
+=head1 ENVIRONMENT VARIABLES
+
+The following environment variable is used:
+
+=over 8
+
+=item B<GSH_HOSTS>
+
+This variable, when set, is used to set the default path of the C<ghosts>
+file.  It will be ignored when the B<-g> switch is used.
+
+=back
 
 =head1 BUGS
 
@@ -96,17 +286,21 @@ I bet.
 
 =head1 SEE ALSO
 
-perl(1), gsh(1), SystemManagement::Ghosts(1)
+perl(1), gsh(1).
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Kees Cook E<lt>kees@outflux.netE<gt>
+
+Raphael Manfredi E<lt><Raphael_Manfredi@pobox.comE<gt>
 
 L<http://www.outflux.net/|http://www.outflux.net/>
 
 =head1 COPYRIGHT
 
 Copyright (C) 1998-2014 Kees Cook <kees@outflux.net>
+
+Copyright (C) 2021 Raphael Manfredi <Raphael_Manfredi@pobox.com>
 
 Supposedly based on original code distributed with Perl Distribution.
 
@@ -115,8 +309,6 @@ modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
 of the License, or (at your option) any later version.
 
-=head1 REVISION
-
-Revision: $Revision $
-
 =cut
+
+# vi: set ts=4 sw=4:
