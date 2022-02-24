@@ -25,7 +25,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -r, --run-locally     Run commands locally (replaces some $var for you)
  -s, --show-commands   Displays the command before the output report
  -t, --tabulate        Align host output and prefixes nicely
- -C, --copy DIR        Copies specified files to remote DIR on each host
+ -C, --copy DIR        Copies specified entries to remote DIR on each host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
  -X, --extra-ssh       Supply extra arguments to ssh
@@ -143,14 +143,16 @@ files to the remote DIR on each host.
 
 For instance:
 
-	gsh -C /tmp all file1 file2 /path/file3
+	gsh -C /tmp all file1 file2 /path/file3 /path/dir1
 
-would create a copy of all the specified files in the C</tmp> directory
-of all hosts.
+would create a copy of all the specified files or directories (recursively)
+in the C</tmp> directory of all hosts.
 
 A report simply lists success or failure, but does not give detail about
 which files could not be copied remotely (insufficient permission on
 the remote host, I/O error, etc.).
+
+Permissions and original timestamps are preserved by SCP if possible.
 
 =item B<-L>, B<--force-user> USER
 
@@ -318,7 +320,6 @@ if ($opt_copy_to) {
 	# We also need to validate that entries can be copied
 	foreach my $file (@cmd) {
 		die "$me: '$file' does not exist\n" unless -e $file;
-		die "$me: '$file' is a directory\n" if -d _;
 		die "$me: '$file' is a device\n" if (-b _ || -c _);
 		die "$me: '$file' is a pipe\n" if -p _;
 		die "$me: '$file' is a socket\n" if -S _;
@@ -439,7 +440,7 @@ foreach my $ghost (@BACKBONES) {
 				$user = $remote_user if ($remote_user && !defined($user));
 				my $target = defined($user) ? "$user\@host" : $host;
 				push(@list, "$target:$dir");
-				@run = ("scp", "-o", "BatchMode=yes", @extra, @list);
+				@run = ("scp", "-rp", "-o", "BatchMode=yes", @extra, @list);
 			} else {
 				push(@extra, "-p", $port) if defined $port;
 				push(@extra, defined($user) ? "$user@$host" : $host);
