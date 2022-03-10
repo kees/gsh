@@ -450,7 +450,7 @@ foreach my $ghost (@BACKBONES) {
 		}
 
 		# should never get to next line
-		die "Exec of ssh to $host failed!\n";
+		die "$me: exec of ssh to $host failed: $!!\n";
 	}
 	elsif (!$pid) {				# report failures
 		# !$pid is true for 0 also...
