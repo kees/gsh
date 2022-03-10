@@ -686,7 +686,7 @@ sub gsh_catch {
 	}
 	# yell if wait is lying to us
 	if ($pid < 0) {
-		print "Missed a child??!  May have to Ctrl-C out.\n";
+		warn "$me: missed a child??!  May have to Ctrl-C out.\n";
 	}
 	else {
 		grab_output($pid, $type, $status);
