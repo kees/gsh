@@ -590,7 +590,7 @@ sub report_error {
 sub show_output {
 	my ($waiting) = @_;
 	# This loop checks to see if there is any output waiting to be
-	# printed.  Since we're going it alphabetically by machine name,
+	# printed.  Since we're doing it alphabetically by machine name,
 	# it will quit immediately if it comes across an "empty" output
 	# in the alpha-sorted list of keys.
 	# A lone "." means that a machine finished without any output.
