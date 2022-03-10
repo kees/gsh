@@ -587,10 +587,6 @@ sub report_error {
 	}
 };
 
-warn sprintf("$me: error reported for $errored host%s\n", $errored > 1 ? "s" : "")
-	if $errored;
-
-
 sub show_output {
 	my ($waiting) = @_;
 	# This loop checks to see if there is any output waiting to be
