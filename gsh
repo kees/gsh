@@ -338,7 +338,8 @@ if ($opt_tabulate) {
 }
 #
 # Progress counters
-my ($contacted, $replying, $skipped, $completed, $errored) = (0, 0, 0, 0, 0);
+my ($contacted, $replying, $skipped, $completed, $errored, $empty) =
+	(0, 0, 0, 0, 0, 0);
 my @errored;
 my @skipped;
 my $hosts = @BACKBONES;		# Number of selected hosts
@@ -530,12 +531,19 @@ while (defined($togo)) {
 	}
 }
 
+sub plural ($) { $_[0], 1 == $_[0] ? "" : "s" }
+
 # handle any other output that hadn't been printed yet
 show_output(0);
 tty_progress_clear();
 
 report_error("skipped %d host%s", \@skipped);
 report_error("error reported for %d host%s", \@errored);
+
+if ($empty != 0 && $empty != $replying) {
+	warn sprintf "$me: got empty output for %u/%u replying host%s\n",
+		$empty, plural($replying);
+}
 
 #print "skipped machines: $forked\n";
 #@tried=split(/\s+/,$forked);
@@ -546,9 +554,7 @@ report_error("error reported for %d host%s", \@errored);
 
 exit($errored ? EXIT_ERRORED : EXIT_OK);
 
-
-
-# subroutines
+### subroutines
 
 # Clear previous tty progress by overwriting a blank line.
 sub tty_progress_clear {
@@ -578,7 +584,7 @@ sub report_error {
 	return unless @$aref;
 	my $cnt = @$aref;
 	my $list = join(', ', @$aref);
-	my $msg = "$me: " . sprintf($fmt, $cnt, $cnt > 1 ? "s" : "");
+	my $msg = "$me: " . sprintf($fmt, plural($cnt));
 	if (length($msg) + length($list) < 77) {
 		warn "$msg ($list)\n";
 	} else {
@@ -661,7 +667,8 @@ sub grab_output {
 	}
 	# if there was no output, signal to the output printing loops
 	if (0 == $length) {
-		$output{$host} = "."
+		$output{$host} = ".";
+		$empty++;
 	} elsif ($type =~ /^interrupt/)  {
 		$output{$host} .= "\n" if "\n" ne substr($output{$host}, -1);
 		$output{$host} .= $showlist{$host} . "(interrupted by signal)\n";
