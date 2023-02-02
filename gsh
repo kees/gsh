@@ -25,7 +25,7 @@ gsh [OPTIONS] SYSTEMS CMD...
  -r, --run-locally     Run commands locally (replaces some $var for you)
  -s, --show-commands   Displays the command before the output report
  -t, --tabulate        Align host output and prefixes nicely
- -C, --copy DIR        Copies specified files to remote DIR on each host
+ -C, --copy DIR        Copies specified entries to remote DIR on each host
  -L, --force-user USER Force USER, superseding users from ghosts file
  -V, --version         Report the version and exit
  -X, --extra-ssh       Supply extra arguments to ssh
@@ -143,14 +143,16 @@ files to the remote DIR on each host.
 
 For instance:
 
-	gsh -C /tmp all file1 file2 /path/file3
+	gsh -C /tmp all file1 file2 /path/file3 /path/dir1
 
-would create a copy of all the specified files in the C</tmp> directory
-of all hosts.
+would create a copy of all the specified files or directories (recursively)
+in the C</tmp> directory of all hosts.
 
 A report simply lists success or failure, but does not give detail about
 which files could not be copied remotely (insufficient permission on
 the remote host, I/O error, etc.).
+
+Permissions and original timestamps are preserved by SCP if possible.
 
 =item B<-L>, B<--force-user> USER
 
@@ -318,7 +320,6 @@ if ($opt_copy_to) {
 	# We also need to validate that entries can be copied
 	foreach my $file (@cmd) {
 		die "$me: '$file' does not exist\n" unless -e $file;
-		die "$me: '$file' is a directory\n" if -d _;
 		die "$me: '$file' is a device\n" if (-b _ || -c _);
 		die "$me: '$file' is a pipe\n" if -p _;
 		die "$me: '$file' is a socket\n" if -S _;
@@ -337,7 +338,8 @@ if ($opt_tabulate) {
 }
 #
 # Progress counters
-my ($contacted, $replying, $skipped, $completed, $errored) = (0, 0, 0, 0, 0);
+my ($contacted, $replying, $skipped, $completed, $errored, $empty) =
+	(0, 0, 0, 0, 0, 0);
 my @errored;
 my @skipped;
 my $hosts = @BACKBONES;		# Number of selected hosts
@@ -439,7 +441,7 @@ foreach my $ghost (@BACKBONES) {
 				$user = $remote_user if ($remote_user && !defined($user));
 				my $target = defined($user) ? "$user\@host" : $host;
 				push(@list, "$target:$dir");
-				@run = ("scp", "-o", "BatchMode=yes", @extra, @list);
+				@run = ("scp", "-rp", "-o", "BatchMode=yes", @extra, @list);
 			} else {
 				push(@extra, "-p", $port) if defined $port;
 				push(@extra, defined($user) ? "$user@$host" : $host);
@@ -449,7 +451,7 @@ foreach my $ghost (@BACKBONES) {
 		}
 
 		# should never get to next line
-		die "Exec of ssh to $host failed!\n";
+		die "$me: exec of ssh to $host failed: $!!\n";
 	}
 	elsif (!$pid) {				# report failures
 		# !$pid is true for 0 also...
@@ -529,12 +531,19 @@ while (defined($togo)) {
 	}
 }
 
+sub plural ($) { $_[0], 1 == $_[0] ? "" : "s" }
+
 # handle any other output that hadn't been printed yet
 show_output(0);
 tty_progress_clear();
 
 report_error("skipped %d host%s", \@skipped);
 report_error("error reported for %d host%s", \@errored);
+
+if ($empty != 0 && $empty != $replying) {
+	warn sprintf "$me: got empty output for %u/%u replying host%s\n",
+		$empty, plural($replying);
+}
 
 #print "skipped machines: $forked\n";
 #@tried=split(/\s+/,$forked);
@@ -545,9 +554,7 @@ report_error("error reported for %d host%s", \@errored);
 
 exit($errored ? EXIT_ERRORED : EXIT_OK);
 
-
-
-# subroutines
+### subroutines
 
 # Clear previous tty progress by overwriting a blank line.
 sub tty_progress_clear {
@@ -577,7 +584,7 @@ sub report_error {
 	return unless @$aref;
 	my $cnt = @$aref;
 	my $list = join(', ', @$aref);
-	my $msg = "$me: " . sprintf($fmt, $cnt, $cnt > 1 ? "s" : "");
+	my $msg = "$me: " . sprintf($fmt, plural($cnt));
 	if (length($msg) + length($list) < 77) {
 		warn "$msg ($list)\n";
 	} else {
@@ -586,14 +593,10 @@ sub report_error {
 	}
 };
 
-warn sprintf("$me: error reported for $errored host%s\n", $errored > 1 ? "s" : "")
-	if $errored;
-
-
 sub show_output {
 	my ($waiting) = @_;
 	# This loop checks to see if there is any output waiting to be
-	# printed.  Since we're going it alphabetically by machine name,
+	# printed.  Since we're doing it alphabetically by machine name,
 	# it will quit immediately if it comes across an "empty" output
 	# in the alpha-sorted list of keys.
 	# A lone "." means that a machine finished without any output.
@@ -664,7 +667,8 @@ sub grab_output {
 	}
 	# if there was no output, signal to the output printing loops
 	if (0 == $length) {
-		$output{$host} = "."
+		$output{$host} = ".";
+		$empty++;
 	} elsif ($type =~ /^interrupt/)  {
 		$output{$host} .= "\n" if "\n" ne substr($output{$host}, -1);
 		$output{$host} .= $showlist{$host} . "(interrupted by signal)\n";
@@ -689,7 +693,7 @@ sub gsh_catch {
 	}
 	# yell if wait is lying to us
 	if ($pid < 0) {
-		print "Missed a child??!  May have to Ctrl-C out.\n";
+		warn "$me: missed a child??!  May have to Ctrl-C out.\n";
 	}
 	else {
 		grab_output($pid, $type, $status);
